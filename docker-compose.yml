@@ -1,0 +1,16 @@
+services:
+  android-build:
+    build: .
+    image: foodtracker-build
+    volumes:
+      - .:/workspace
+      # Cache Gradle/SDK downloads between runs so rebuilds are fast even
+      # though the container itself is disposable.
+      - gradle-cache:/root/.gradle
+    working_dir: /workspace
+    stdin_open: true
+    tty: true
+    command: bash
+
+volumes:
+  gradle-cache:
