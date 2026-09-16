@@ -4,6 +4,7 @@ import com.kadhiravan.foodtracker.data.local.CardStatus
 import com.kadhiravan.foodtracker.data.local.ChatMessage
 import com.kadhiravan.foodtracker.data.local.ChatMessageDao
 import com.kadhiravan.foodtracker.data.local.ChatRole
+import com.kadhiravan.foodtracker.data.local.FoodItem
 import com.kadhiravan.foodtracker.data.local.LogEntry
 import com.kadhiravan.foodtracker.data.local.MealType
 import com.kadhiravan.foodtracker.data.prefs.ChatProvider
@@ -12,6 +13,7 @@ import com.kadhiravan.foodtracker.data.remote.ChatApiClient
 import com.kadhiravan.foodtracker.data.remote.LogCardParser
 import com.kadhiravan.foodtracker.data.remote.ParsedFoodItem
 import com.kadhiravan.foodtracker.util.DateUtils
+import com.kadhiravan.foodtracker.util.FoodMatcher
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -43,13 +45,16 @@ class ChatRepository(
             ChatProvider.GOOGLE -> googleApiClient to securePrefs.geminiApiKey
         }
 
+        val knownFoods = foodRepository.getAll()
+
         val replyContent = try {
             apiClient.sendMessage(
                 history = history,
                 newUserText = text,
                 apiKey = apiKey,
-                knownFoods = foodRepository.getAll(),
-                todaysLogSummary = buildLogSummary(logRepository.getForDate(date))
+                knownFoods = knownFoods,
+                todaysLogSummary = buildLogSummary(logRepository.getForDate(date)),
+                usdaApiKey = securePrefs.usdaApiKey
             )
         } catch (e: CancellationException) {
             // The user cancelled the send — their message stays in the thread, but we
@@ -60,13 +65,40 @@ class ChatRepository(
         }
 
         val card = LogCardParser.parse(replyContent)
+        // The model decides for itself whether an item "matches" something in the known-foods
+        // list it was shown, then re-estimates calories/macros either way — so the same dish
+        // worded slightly differently can silently get a different number each time. Redoing
+        // the match deterministically here and overwriting with the catalog's own stored
+        // values (only when the units actually line up) makes repeat dishes consistent
+        // regardless of what the model guessed.
+        val finalContent = if (card != null) {
+            val correctedMeals = card.meals.map { meal ->
+                meal.mealType to meal.items.map { item -> applyKnownFoodMatch(item, knownFoods) }
+            }
+            LogCardParser.withUpdatedFence(replyContent, correctedMeals)
+        } else {
+            replyContent
+        }
+
         chatMessageDao.insert(
             ChatMessage(
                 role = ChatRole.ASSISTANT,
-                content = replyContent,
+                content = finalContent,
                 chatDate = date,
                 cardStatus = if (card != null) CardStatus.PENDING else null
             )
+        )
+    }
+
+    private fun applyKnownFoodMatch(item: ParsedFoodItem, knownFoods: List<FoodItem>): ParsedFoodItem {
+        val match = FoodMatcher.findBestMatch(item.name, knownFoods) ?: return item
+        if (!FoodMatcher.unitsCompatible(item.unit, match.servingUnit)) return item
+        return item.copy(
+            calories = (match.caloriesPerServing * item.quantity).roundToInt(),
+            proteinG = (match.proteinG ?: 0.0) * item.quantity,
+            carbsG = (match.carbsG ?: 0.0) * item.quantity,
+            fatG = (match.fatG ?: 0.0) * item.quantity,
+            matchedKnownFood = true
         )
     }
 

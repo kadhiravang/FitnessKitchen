@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
@@ -19,7 +20,7 @@ import androidx.compose.ui.unit.dp
 import com.kadhiravan.foodtracker.data.local.LogEntry
 
 @Composable
-fun LogEntryRow(entry: LogEntry, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+fun LogEntryRow(entry: LogEntry, onEdit: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -45,6 +46,9 @@ fun LogEntryRow(entry: LogEntry, onDelete: () -> Unit, modifier: Modifier = Modi
         }
         Row(verticalAlignment = Alignment.CenterVertically) {
             Text("${entry.calories} kcal", style = MaterialTheme.typography.bodyLarge)
+            IconButton(onClick = onEdit) {
+                Icon(Icons.Default.Edit, contentDescription = "Edit entry")
+            }
             IconButton(onClick = onDelete) {
                 Icon(Icons.Default.Delete, contentDescription = "Delete entry")
             }

@@ -56,8 +56,11 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
     var chatProvider by remember { mutableStateOf(securePrefs.chatProvider) }
     var geminiApiKey by remember { mutableStateOf(securePrefs.geminiApiKey) }
     var nvidiaApiKey by remember { mutableStateOf(securePrefs.nvidiaApiKey) }
+    var usdaApiKey by remember { mutableStateOf(securePrefs.usdaApiKey) }
     var recognitionLanguage by remember { mutableStateOf(securePrefs.recognitionLanguage) }
     var whisperServerUrl by remember { mutableStateOf(securePrefs.whisperServerUrl) }
+    var useCloudWhisper by remember { mutableStateOf(securePrefs.useCloudWhisper) }
+    var whisperApiKey by remember { mutableStateOf(securePrefs.whisperApiKey) }
     var saved by remember { mutableStateOf(false) }
 
     var backupIncludePhotos by remember { mutableStateOf(securePrefs.backupIncludePhotos) }
@@ -147,6 +150,22 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                                 visualTransformation = PasswordVisualTransformation(),
                                 modifier = Modifier.fillMaxWidth()
                             )
+                            Text(
+                                "Optional — a USDA FoodData Central key lets Gemini look up real " +
+                                    "nutrition facts for unfamiliar foods instead of guessing from " +
+                                    "memory. Free at fdc.nal.usda.gov/api-key-signup.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 14.dp, bottom = 10.dp)
+                            )
+                            OutlinedTextField(
+                                value = usdaApiKey,
+                                onValueChange = { usdaApiKey = it; saved = false },
+                                label = { Text("USDA FoodData Central API key") },
+                                singleLine = true,
+                                visualTransformation = PasswordVisualTransformation(),
+                                modifier = Modifier.fillMaxWidth()
+                            )
                         }
                         ChatProvider.NVIDIA -> {
                             Text(
@@ -194,21 +213,57 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
 
             Card(modifier = Modifier.fillMaxWidth()) {
                 Column(modifier = Modifier.padding(20.dp)) {
-                    Text("Local Whisper server", style = MaterialTheme.typography.titleMedium)
+                    Text("Voice transcription (Whisper)", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Optional — for much higher-accuracy transcription than the on-device mic, run the Whisper server on your laptop (see whisper-server/ setup) and enter its address. Only reachable on the same Wi-Fi with the server running; the app falls back to the on-device recognizer automatically otherwise.",
+                        "Optional — for much higher-accuracy transcription than the on-device mic. Run the Whisper server on your own laptop (see whisper-server/ setup), or use OpenAI's hosted API instead if you don't want to run anything locally. The app falls back to the on-device recognizer automatically if neither is reachable.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
                     )
-                    OutlinedTextField(
-                        value = whisperServerUrl,
-                        onValueChange = { whisperServerUrl = it; saved = false },
-                        label = { Text("Server URL") },
-                        placeholder = { Text("http://10.0.0.250:8765") },
-                        singleLine = true,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "Use OpenAI's cloud API instead of a local server",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f).padding(end = 12.dp)
+                        )
+                        Switch(
+                            checked = useCloudWhisper,
+                            onCheckedChange = { useCloudWhisper = it; saved = false }
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    AnimatedVisibility(visible = useCloudWhisper) {
+                        Column {
+                            OutlinedTextField(
+                                value = whisperApiKey,
+                                onValueChange = { whisperApiKey = it; saved = false },
+                                label = { Text("OpenAI API key") },
+                                singleLine = true,
+                                visualTransformation = PasswordVisualTransformation(),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            Text(
+                                "Needs an OpenAI account with billing set up — Whisper isn't on the free tier. Get a key at platform.openai.com/api-keys.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+                    }
+                    AnimatedVisibility(visible = !useCloudWhisper) {
+                        OutlinedTextField(
+                            value = whisperServerUrl,
+                            onValueChange = { whisperServerUrl = it; saved = false },
+                            label = { Text("Server URL") },
+                            placeholder = { Text("http://10.0.0.250:8765") },
+                            singleLine = true,
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
                 }
             }
 
@@ -291,7 +346,10 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                 onClick = {
                     securePrefs.geminiApiKey = geminiApiKey.trim()
                     securePrefs.nvidiaApiKey = nvidiaApiKey.trim()
+                    securePrefs.usdaApiKey = usdaApiKey.trim()
                     securePrefs.whisperServerUrl = whisperServerUrl.trim()
+                    securePrefs.useCloudWhisper = useCloudWhisper
+                    securePrefs.whisperApiKey = whisperApiKey.trim()
                     saved = true
                 },
                 modifier = Modifier.fillMaxWidth()

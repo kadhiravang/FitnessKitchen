@@ -133,6 +133,10 @@ class HomeViewModel(
         viewModelScope.launch { logRepository.delete(entry) }
     }
 
+    fun updateEntry(entry: LogEntry) {
+        viewModelScope.launch { logRepository.update(entry) }
+    }
+
     /** Direct add, bypassing the Chat tab's AI parsing entirely — a fallback for when the
      * chat model's rate limit is exhausted (or you just don't want to type it out). */
     fun addManualEntry(

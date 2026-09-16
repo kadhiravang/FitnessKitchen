@@ -35,6 +35,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
+import com.kadhiravan.foodtracker.data.local.LogEntry
 import com.kadhiravan.foodtracker.data.local.MealType
 import com.kadhiravan.foodtracker.data.prefs.SecurePrefs
 import com.kadhiravan.foodtracker.ui.components.MealSection
@@ -95,6 +96,7 @@ fun HomeScreen(
     }
 
     var showManualEntryDialog by remember { mutableStateOf(false) }
+    var editingEntry by remember { mutableStateOf<LogEntry?>(null) }
 
     Scaffold(
         modifier = modifier,
@@ -181,6 +183,7 @@ fun HomeScreen(
                     MealSection(
                         mealType = meal,
                         entries = uiState.entriesByMeal[meal].orEmpty(),
+                        onEditEntry = { editingEntry = it },
                         onDeleteEntry = viewModel::deleteEntry
                     )
                 }
@@ -195,6 +198,17 @@ fun HomeScreen(
             onSave = { name, quantity, unit, calories, proteinG, carbsG, fatG, mealType ->
                 viewModel.addManualEntry(name, quantity, unit, calories, proteinG, carbsG, fatG, mealType)
                 showManualEntryDialog = false
+            }
+        )
+    }
+
+    editingEntry?.let { entry ->
+        EditLogEntryDialog(
+            entry = entry,
+            onDismiss = { editingEntry = null },
+            onSave = {
+                viewModel.updateEntry(it)
+                editingEntry = null
             }
         )
     }

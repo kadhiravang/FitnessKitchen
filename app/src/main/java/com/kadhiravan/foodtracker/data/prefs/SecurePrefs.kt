@@ -69,6 +69,13 @@ class SecurePrefs(context: Context) {
         get() = prefs.getString(KEY_NVIDIA_API_KEY, "") ?: ""
         set(value) = prefs.edit().putString(KEY_NVIDIA_API_KEY, value).apply()
 
+    /** USDA FoodData Central key — lets the Gemini chat model call a real nutrition
+     * lookup tool for unfamiliar foods instead of only estimating from memory. Free at
+     * fdc.nal.usda.gov/api-key-signup. Blank just disables the tool, not the chat. */
+    var usdaApiKey: String
+        get() = prefs.getString(KEY_USDA_API_KEY, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_USDA_API_KEY, value).apply()
+
     /** Which chat provider backs the Chat tab — see [ChatProvider]. */
     var chatProvider: ChatProvider
         get() = ChatProvider.entries.find { it.name == prefs.getString(KEY_CHAT_PROVIDER, null) } ?: ChatProvider.GOOGLE
@@ -148,6 +155,17 @@ class SecurePrefs(context: Context) {
         get() = prefs.getString(KEY_WHISPER_SERVER_URL, "") ?: ""
         set(value) = prefs.edit().putString(KEY_WHISPER_SERVER_URL, value).apply()
 
+    /** When true, voice input is transcribed via OpenAI's hosted Whisper API using
+     * [whisperApiKey] instead of probing [whisperServerUrl] for a self-hosted server —
+     * for users who don't want to run whisper-server/ on their own machine. */
+    var useCloudWhisper: Boolean
+        get() = prefs.getBoolean(KEY_USE_CLOUD_WHISPER, false)
+        set(value) = prefs.edit().putBoolean(KEY_USE_CLOUD_WHISPER, value).apply()
+
+    var whisperApiKey: String
+        get() = prefs.getString(KEY_WHISPER_API_KEY, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_WHISPER_API_KEY, value).apply()
+
     /** Whether a backup zip (see data/backup/BackupManager.kt) includes progress-photo
      * image files — off just skips the photos, the rest of the backup is unaffected. */
     var backupIncludePhotos: Boolean
@@ -163,6 +181,7 @@ class SecurePrefs(context: Context) {
         private const val KEY_PROFILE_PIC_CROP_SIZE = "profile_pic_crop_size"
         private const val KEY_GEMINI_API_KEY = "gemini_api_key"
         private const val KEY_NVIDIA_API_KEY = "nvidia_api_key"
+        private const val KEY_USDA_API_KEY = "usda_api_key"
         private const val KEY_CHAT_PROVIDER = "chat_provider"
         private const val KEY_DAILY_GOAL = "daily_calorie_goal"
         private const val KEY_CALORIE_BUFFER = "calorie_buffer_kcal"
@@ -178,6 +197,8 @@ class SecurePrefs(context: Context) {
         private const val KEY_CUSTOM_FAT = "custom_fat_g"
         private const val KEY_RECOGNITION_LANGUAGE = "recognition_language"
         private const val KEY_WHISPER_SERVER_URL = "whisper_server_url"
+        private const val KEY_USE_CLOUD_WHISPER = "use_cloud_whisper"
+        private const val KEY_WHISPER_API_KEY = "whisper_api_key"
         private const val KEY_BACKUP_INCLUDE_PHOTOS = "backup_include_photos"
     }
 }

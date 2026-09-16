@@ -64,6 +64,7 @@ class BackupManager(
                 profilePicFileName = profilePicFile?.name,
                 geminiApiKey = securePrefs.geminiApiKey,
                 nvidiaApiKey = securePrefs.nvidiaApiKey,
+                usdaApiKey = securePrefs.usdaApiKey,
                 chatProvider = securePrefs.chatProvider.name,
                 dailyCalorieGoal = securePrefs.dailyCalorieGoal,
                 calorieBufferKcal = securePrefs.calorieBufferKcal,
@@ -79,6 +80,8 @@ class BackupManager(
                 customFatG = securePrefs.customFatG,
                 recognitionLanguage = securePrefs.recognitionLanguage,
                 whisperServerUrl = securePrefs.whisperServerUrl,
+                useCloudWhisper = securePrefs.useCloudWhisper,
+                whisperApiKey = securePrefs.whisperApiKey,
                 backupIncludePhotos = includePhotos
             )
         )
@@ -174,6 +177,7 @@ class BackupManager(
         securePrefs.profilePicPath = p.profilePicFileName?.let { restoredProfilePicPath }.orEmpty()
         securePrefs.geminiApiKey = p.geminiApiKey
         securePrefs.nvidiaApiKey = p.nvidiaApiKey
+        securePrefs.usdaApiKey = p.usdaApiKey
         securePrefs.chatProvider = ChatProvider.entries.find { it.name == p.chatProvider } ?: ChatProvider.GOOGLE
         securePrefs.dailyCalorieGoal = p.dailyCalorieGoal
         securePrefs.calorieBufferKcal = p.calorieBufferKcal
@@ -189,6 +193,8 @@ class BackupManager(
         securePrefs.customFatG = p.customFatG
         securePrefs.recognitionLanguage = p.recognitionLanguage
         securePrefs.whisperServerUrl = p.whisperServerUrl
+        securePrefs.useCloudWhisper = p.useCloudWhisper
+        securePrefs.whisperApiKey = p.whisperApiKey
         securePrefs.backupIncludePhotos = p.backupIncludePhotos
         // A restored install should never re-run the first-launch wizard.
         securePrefs.onboardingComplete = true

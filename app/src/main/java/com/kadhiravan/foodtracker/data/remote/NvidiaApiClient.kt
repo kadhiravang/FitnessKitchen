@@ -53,7 +53,8 @@ class NvidiaApiClient : ChatApiClient {
         newUserText: String,
         apiKey: String,
         knownFoods: List<FoodItem>,
-        todaysLogSummary: String
+        todaysLogSummary: String,
+        usdaApiKey: String
     ): String = withContext(Dispatchers.IO) {
         if (apiKey.isBlank()) {
             throw NvidiaApiException("No NVIDIA API key set. Add one in Settings.")

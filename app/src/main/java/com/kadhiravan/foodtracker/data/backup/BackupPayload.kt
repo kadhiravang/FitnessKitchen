@@ -29,6 +29,7 @@ data class SecurePrefsBackup(
     val profilePicFileName: String?,
     val geminiApiKey: String,
     val nvidiaApiKey: String,
+    val usdaApiKey: String,
     val chatProvider: String,
     val dailyCalorieGoal: Int,
     val calorieBufferKcal: Int,
@@ -44,6 +45,8 @@ data class SecurePrefsBackup(
     val customFatG: Int,
     val recognitionLanguage: String,
     val whisperServerUrl: String,
+    val useCloudWhisper: Boolean,
+    val whisperApiKey: String,
     val backupIncludePhotos: Boolean
 )
 

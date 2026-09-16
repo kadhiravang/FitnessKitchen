@@ -64,6 +64,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.kadhiravan.foodtracker.data.local.ChatMessage
 import com.kadhiravan.foodtracker.data.prefs.SecurePrefs
+import com.kadhiravan.foodtracker.data.remote.CloudWhisperClient
 import com.kadhiravan.foodtracker.data.remote.LocalWhisperClient
 import com.kadhiravan.foodtracker.data.remote.LogCardParser
 import com.kadhiravan.foodtracker.ui.voice.AudioRecorder
@@ -97,6 +98,7 @@ fun ChatScreen(viewModel: ChatViewModel, securePrefs: SecurePrefs, modifier: Mod
 
     val coroutineScope = rememberCoroutineScope()
     val whisperClient = remember { LocalWhisperClient() }
+    val cloudWhisperClient = remember { CloudWhisperClient() }
 
     val controller = remember {
         SpeechRecognizerController(
@@ -122,8 +124,11 @@ fun ChatScreen(viewModel: ChatViewModel, securePrefs: SecurePrefs, modifier: Mod
         inputText = ""
         isListening = true
         coroutineScope.launch {
-            val serverUrl = securePrefs.whisperServerUrl
-            useWhisperPath = whisperClient.isReachable(serverUrl)
+            useWhisperPath = if (securePrefs.useCloudWhisper && securePrefs.whisperApiKey.isNotBlank()) {
+                true
+            } else {
+                whisperClient.isReachable(securePrefs.whisperServerUrl)
+            }
             if (useWhisperPath) {
                 audioRecorder.start()
             } else {
@@ -137,9 +142,14 @@ fun ChatScreen(viewModel: ChatViewModel, securePrefs: SecurePrefs, modifier: Mod
             isListening = false
             isTranscribing = true
             val wav = audioRecorder.stopAndGetWav()
+            val useCloud = securePrefs.useCloudWhisper && securePrefs.whisperApiKey.isNotBlank()
             coroutineScope.launch {
                 try {
-                    inputText = whisperClient.transcribe(securePrefs.whisperServerUrl, wav)
+                    inputText = if (useCloud) {
+                        cloudWhisperClient.transcribe(securePrefs.whisperApiKey, wav, securePrefs.recognitionLanguage)
+                    } else {
+                        whisperClient.transcribe(securePrefs.whisperServerUrl, wav)
+                    }
                 } catch (e: Exception) {
                     // Best-effort — the server was reachable moments ago but the actual
                     // transcription call failed; nothing more useful to do than drop it.

@@ -10,6 +10,10 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 import okhttp3.Call
 import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
@@ -28,10 +32,15 @@ class GoogleApiException(message: String) : IOException(message)
  * Talks to Google's Gemini REST API (generateContent) to hold a running conversation
  * about what the user ate. The assistant either asks a clarifying question (plain text)
  * or, once confident, replies with a short line plus a fenced ```log block that
- * [LogCardParser] turns into a confirmable food card — grounded against the user's own
- * food catalog so known dishes get accurate calories instead of guesses.
+ * [LogCardParser] turns into a confirmable food card — grounded two ways: against the
+ * user's own food catalog (known dishes get accurate calories instead of guesses), and,
+ * for anything not already known, via a `lookup_nutrition` function tool backed by real
+ * USDA FoodData Central data (see [UsdaNutritionClient]) instead of the model's own
+ * memorized guess. This is a genuine tool-call loop — the model decides when to invoke
+ * the function, our code executes the real lookup, and the result is fed back for a
+ * second round before the model produces its final reply — not just repeated guessing.
  */
-class GoogleApiClient : ChatApiClient {
+class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClient {
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -50,14 +59,61 @@ class GoogleApiClient : ChatApiClient {
         newUserText: String,
         apiKey: String,
         knownFoods: List<FoodItem>,
-        todaysLogSummary: String
+        todaysLogSummary: String,
+        usdaApiKey: String
     ): String = withContext(Dispatchers.IO) {
+        runConversation(history, newUserText, apiKey, knownFoods, todaysLogSummary, usdaApiKey)
+    }
+
+    private suspend fun runConversation(
+        history: List<ChatMessage>,
+        newUserText: String,
+        apiKey: String,
+        knownFoods: List<FoodItem>,
+        todaysLogSummary: String,
+        usdaApiKey: String
+    ): String {
         if (apiKey.isBlank()) {
             throw GoogleApiException("No Google Gemini API key set. Add one in Settings.")
         }
 
         val knownFoodsJson = knownFoods.joinToString(prefix = "[", postfix = "]") { food ->
             """{"name":"${food.name.escapeJson()}","servingUnit":"${food.servingUnit.escapeJson()}","caloriesPerServing":${food.caloriesPerServing},"proteinG":${food.proteinG ?: 0.0},"carbsG":${food.carbsG ?: 0.0},"fatG":${food.fatG ?: 0.0}}"""
+        }
+
+        val toolsAvailable = usdaApiKey.isNotBlank()
+
+        val groundingRule = if (toolsAvailable) {
+            """
+            - You have a lookup_nutrition function tool backed by a real nutrition database.
+              For any food that ISN'T already in the known-foods list below, call it with a
+              simple generic search term for the dish (e.g. "chicken biryani", not the user's
+              exact phrasing) BEFORE answering — it returns real calories/protein/carbs/fat per
+              100g. Use that as your base, then combine it with the quantity/ingredients the
+              user actually described to compute the final totals (adjusting for home-cooking
+              factors like extra oil the lookup's reference item might not match exactly).
+              If the user describes a custom dish by its ingredients (e.g. "200g chicken,
+              2 tsp oil, 1 onion, 100g tomatoes") rather than naming a known dish, look up
+              EACH significant ingredient separately instead of guessing at the whole thing
+              — you can call the tool multiple times in the same turn — then sum each
+              ingredient's real per-100g values scaled by its own quantity. This is usually
+              far more accurate than a single whole-dish lookup for something home-made.
+              Only skip the lookup for an exact known-foods match. The lookup's search is
+              keyword-based, not smart — check its "description" field is genuinely the same
+              food you asked about before trusting the numbers (e.g. a "chicken 65" search
+              matching a cooking-oil product is a false match, not real data on fried
+              chicken). Many South Indian dishes (kothu parotta, rasam, poriyal, specific
+              kuzhambu varieties, etc.) simply aren't in this database at all — if the lookup
+              returns found:false, or the match is clearly the wrong food, fall back to your
+              own best estimate exactly as if no tool existed, rather than using a bad match.
+            """.trimIndent()
+        } else {
+            """
+            - The user usually does NOT know exact quantities, ingredients, or calorie counts
+              themselves — that's why they're asking you. Always make your own reasonable
+              best-effort estimate using typical Indian home-cooking assumptions (average
+              serving size, common recipe proportions, usual oil/ghee content).
+            """.trimIndent()
         }
 
         val systemPrompt = """
@@ -69,20 +125,18 @@ class GoogleApiClient : ChatApiClient {
               or a mix of both — food names are often native Tamil words. Understand them
               directly and always reply in English.
             - If the user's message isn't about food, just reply naturally and briefly.
-            - The user usually does NOT know exact quantities, ingredients, or calorie counts
-              themselves — that's why they're asking you. NEVER leave them without a number,
-              and almost never ask a clarifying question. Instead, always make your own
-              reasonable best-effort estimate using typical Indian home-cooking assumptions
-              (average serving size, common recipe proportions, usual oil/ghee content) and
-              log it immediately — you can briefly state the assumption you made in your
-              reply (e.g. "assuming a medium bowl, ~250ml") so they can correct it on the
-              card afterward if it's off. Only ask a clarifying question in the rare case
-              where you cannot identify the dish at all (e.g. an unfamiliar name with zero
-              context) — even then, still give your best guess estimate AND the log block in
-              that same reply rather than blocking on an answer.
-            - Once you have an estimate (it matches a known food, or you've assumed reasonable
-              defaults), reply with a short friendly line confirming what you understood, followed
-              immediately by EXACTLY ONE fenced block containing ONE JSON object in this form:
+            - NEVER leave the user without a number, and almost never ask a clarifying
+              question — log your best-effort result immediately. You can briefly state any
+              assumption you made in your reply (e.g. "assuming a medium bowl, ~250ml") so
+              they can correct it on the card afterward if it's off. Only ask a clarifying
+              question in the rare case where you cannot identify the dish at all — even then,
+              still give your best guess estimate AND the log block in that same reply rather
+              than blocking on an answer.
+            $groundingRule
+            - Once you have an estimate (it matches a known food, or you've used the lookup
+              tool / your own best assumption), reply with a short friendly line confirming
+              what you understood, followed immediately by EXACTLY ONE fenced block containing
+              ONE JSON object in this form:
               ```log
               {"meals":[{"mealType":"BREAKFAST","items":[{"name":"...","quantity":1,"unit":"piece","calories":120,"proteinG":4.5,"carbsG":18.0,"fatG":3.0,"matchedKnownFood":true}]}]}
               ```
@@ -94,8 +148,7 @@ class GoogleApiClient : ChatApiClient {
               one based on context/time if not stated). "calories", "proteinG", "carbsG", and
               "fatG" are all TOTALS for the quantity/unit given, not per-unit values. If an
               item matches a known food, scale its caloriesPerServing/proteinG/carbsG/fatG by
-              quantity and set matchedKnownFood true; otherwise estimate all four realistically
-              from your knowledge of Indian cuisine and set matchedKnownFood false.
+              quantity and set matchedKnownFood true; otherwise set matchedKnownFood false.
             - Keep every reply short — a couple of sentences at most, like a text message.
             - You're told what the user has already eaten today below. Use it for context —
               e.g. if asked "what should I eat now" or "how am I doing today", answer using
@@ -112,39 +165,82 @@ class GoogleApiClient : ChatApiClient {
                 add(GeminiContent(role = if (msg.role == ChatRole.USER) "user" else "model", parts = listOf(GeminiPart(text = msg.content))))
             }
             add(GeminiContent(role = "user", parts = listOf(GeminiPart(text = newUserText))))
+        }.toMutableList()
+
+        val tools = if (toolsAvailable) listOf(GeminiTool(functionDeclarations = listOf(NUTRITION_LOOKUP_DECLARATION))) else emptyList()
+        val systemInstruction = GeminiSystemInstruction(parts = listOf(GeminiPart(text = systemPrompt)))
+
+        var round = 0
+        while (true) {
+            round++
+
+            val requestBody = GeminiRequest(contents = contents, systemInstruction = systemInstruction, tools = tools)
+            val body = json.encodeToString(GeminiRequest.serializer(), requestBody)
+                .toRequestBody("application/json".toMediaType())
+
+            val request = Request.Builder()
+                .url("https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent?key=$apiKey")
+                .addHeader("Content-Type", "application/json")
+                .post(body)
+                .build()
+
+            val startMs = System.currentTimeMillis()
+            val responseText = executeWithRetry(request)
+            Log.d(TAG, "Gemini API round $round trip: ${System.currentTimeMillis() - startMs}ms")
+
+            val completion = try {
+                json.decodeFromString(GeminiResponse.serializer(), responseText)
+            } catch (e: Exception) {
+                throw GoogleApiException("Unexpected response from Gemini API.")
+            }
+
+            val parts = completion.candidates.firstOrNull()?.content?.parts
+                ?: throw GoogleApiException(
+                    completion.promptFeedback?.blockReason?.let { "Gemini blocked the response: $it" }
+                        ?: "Gemini API returned no content."
+                )
+
+            val functionCalls = parts.mapNotNull { it.functionCall }
+            if (functionCalls.isNotEmpty() && round <= MAX_TOOL_ROUNDS) {
+                // A custom dish described ingredient-by-ingredient (oil, veggies, protein,
+                // etc.) needs one lookup per ingredient, not one for the whole dish — Gemini
+                // batches these as several functionCall parts in a single turn rather than
+                // one at a time, so every part has to be answered, not just the first.
+                contents.add(GeminiContent(role = "model", parts = parts))
+
+                val responseParts = functionCalls.map { call ->
+                    val foodName = (call.args["food_name"] as? JsonPrimitive)?.content.orEmpty()
+                    val facts = runCatching { usdaClient.lookup(foodName, usdaApiKey) }.getOrNull()
+                    val resultJson = buildJsonObject {
+                        if (facts != null) {
+                            put("found", true)
+                            put("description", facts.description)
+                            put("caloriesPer100g", facts.caloriesPer100g)
+                            put("proteinPer100g", facts.proteinPer100g)
+                            put("carbsPer100g", facts.carbsPer100g)
+                            put("fatPer100g", facts.fatPer100g)
+                        } else {
+                            put("found", false)
+                        }
+                    }
+                    GeminiPart(
+                        functionResponse = GeminiFunctionResponse(
+                            name = call.name,
+                            id = call.id,
+                            response = resultJson
+                        )
+                    )
+                }
+                contents.add(GeminiContent(role = "user", parts = responseParts))
+                continue
+            }
+
+            // Joined rather than just the first part — replies after a tool round can come
+            // back split across multiple text parts instead of one.
+            val text = parts.mapNotNull { it.text }.joinToString("").takeIf { it.isNotBlank() }
+                ?: throw GoogleApiException("Gemini API returned no content.")
+            return text.trim()
         }
-
-        val requestBody = GeminiRequest(
-            contents = contents,
-            systemInstruction = GeminiSystemInstruction(parts = listOf(GeminiPart(text = systemPrompt)))
-        )
-
-        val body = json.encodeToString(GeminiRequest.serializer(), requestBody)
-            .toRequestBody("application/json".toMediaType())
-
-        val request = Request.Builder()
-            .url("https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent?key=$apiKey")
-            .addHeader("Content-Type", "application/json")
-            .post(body)
-            .build()
-
-        val startMs = System.currentTimeMillis()
-        val responseText = executeWithRetry(request)
-        Log.d(TAG, "Gemini API round trip: ${System.currentTimeMillis() - startMs}ms")
-
-        val completion = try {
-            json.decodeFromString(GeminiResponse.serializer(), responseText)
-        } catch (e: Exception) {
-            throw GoogleApiException("Unexpected response from Gemini API.")
-        }
-
-        val content = completion.candidates.firstOrNull()?.content?.parts?.firstOrNull()?.text
-            ?: throw GoogleApiException(
-                completion.promptFeedback?.blockReason?.let { "Gemini blocked the response: $it" }
-                    ?: "Gemini API returned no content."
-            )
-
-        content.trim()
     }
 
     /**
@@ -218,11 +314,57 @@ class GoogleApiClient : ChatApiClient {
         // Free-tier model. gemini-2.5-flash was retired — the API itself now points
         // callers to this replacement.
         const val MODEL = "gemini-3.6-flash"
+        // Caps how many tool-call round TRIPS one message can trigger — not how many
+        // lookups, since Gemini batches several functionCall parts into a single turn
+        // when it can (e.g. every ingredient of a custom dish at once). This just stops a
+        // confused model from looping indefinitely across turns.
+        const val MAX_TOOL_ROUNDS = 6
+
+        val NUTRITION_LOOKUP_DECLARATION = GeminiFunctionDeclaration(
+            name = "lookup_nutrition",
+            description = "Looks up real nutrition facts (calories, protein, carbs, fat — all " +
+                "per 100g) for a food from the USDA FoodData Central database. Call this for " +
+                "any food that isn't already in the known-foods list, before estimating.",
+            parameters = GeminiSchema(
+                type = "object",
+                properties = mapOf(
+                    "food_name" to GeminiSchema(
+                        type = "string",
+                        description = "A simple, generic search term for the food or dish " +
+                            "(e.g. \"chicken biryani\", \"idli\") — not the user's exact wording."
+                    )
+                ),
+                required = listOf("food_name")
+            )
+        )
     }
 }
 
 @Serializable
-private data class GeminiPart(val text: String)
+private data class GeminiPart(
+    val text: String? = null,
+    val functionCall: GeminiFunctionCall? = null,
+    val functionResponse: GeminiFunctionResponse? = null,
+    // Gemini 3's internal reasoning-state token attached to functionCall (and sometimes
+    // text) parts — must be echoed back verbatim on the part it arrived on when replaying
+    // the model's own turn in a follow-up request, or the API 400s ("missing
+    // thought_signature"). We never read this ourselves, only round-trip it.
+    val thoughtSignature: String? = null
+)
+
+@Serializable
+private data class GeminiFunctionCall(
+    val name: String,
+    val id: String? = null,
+    val args: JsonObject = JsonObject(emptyMap())
+)
+
+@Serializable
+private data class GeminiFunctionResponse(
+    val name: String,
+    val id: String? = null,
+    val response: JsonObject
+)
 
 @Serializable
 private data class GeminiContent(val role: String, val parts: List<GeminiPart>)
@@ -246,10 +388,29 @@ private data class GeminiGenerationConfig(
 )
 
 @Serializable
+private data class GeminiSchema(
+    val type: String,
+    val description: String? = null,
+    val properties: Map<String, GeminiSchema>? = null,
+    val required: List<String>? = null
+)
+
+@Serializable
+private data class GeminiFunctionDeclaration(
+    val name: String,
+    val description: String,
+    val parameters: GeminiSchema
+)
+
+@Serializable
+private data class GeminiTool(val functionDeclarations: List<GeminiFunctionDeclaration>? = null)
+
+@Serializable
 private data class GeminiRequest(
     val contents: List<GeminiContent>,
     val systemInstruction: GeminiSystemInstruction,
-    val generationConfig: GeminiGenerationConfig = GeminiGenerationConfig()
+    val generationConfig: GeminiGenerationConfig = GeminiGenerationConfig(),
+    val tools: List<GeminiTool> = emptyList()
 )
 
 @Serializable

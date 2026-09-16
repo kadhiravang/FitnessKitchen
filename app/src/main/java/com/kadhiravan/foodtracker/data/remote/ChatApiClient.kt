@@ -14,6 +14,7 @@ interface ChatApiClient {
         newUserText: String,
         apiKey: String,
         knownFoods: List<FoodItem>,
-        todaysLogSummary: String
+        todaysLogSummary: String,
+        usdaApiKey: String = ""
     ): String
 }

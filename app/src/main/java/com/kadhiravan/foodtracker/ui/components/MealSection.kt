@@ -45,6 +45,7 @@ fun MealType.icon(): ImageVector = when (this) {
 fun MealSection(
     mealType: MealType,
     entries: List<LogEntry>,
+    onEditEntry: (LogEntry) -> Unit,
     onDeleteEntry: (LogEntry) -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -84,7 +85,7 @@ fun MealSection(
             }
             entries.forEachIndexed { index, entry ->
                 if (index > 0) HorizontalDivider()
-                LogEntryRow(entry = entry, onDelete = { onDeleteEntry(entry) })
+                LogEntryRow(entry = entry, onEdit = { onEditEntry(entry) }, onDelete = { onDeleteEntry(entry) })
             }
         }
     }
