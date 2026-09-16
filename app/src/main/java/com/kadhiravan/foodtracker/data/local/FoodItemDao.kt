@@ -33,4 +33,7 @@ interface FoodItemDao {
 
     @Query("SELECT COUNT(*) FROM food_items")
     suspend fun count(): Int
+
+    @Query("DELETE FROM food_items")
+    suspend fun deleteAll()
 }

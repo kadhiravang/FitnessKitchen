@@ -2,7 +2,9 @@ package com.kadhiravan.foodtracker.data.local
 
 import androidx.room.Entity
 import androidx.room.PrimaryKey
+import kotlinx.serialization.Serializable
 
+@Serializable
 @Entity(tableName = "food_items")
 data class FoodItem(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,

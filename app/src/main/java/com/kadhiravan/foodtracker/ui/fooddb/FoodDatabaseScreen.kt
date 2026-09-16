@@ -4,112 +4,102 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.Restaurant
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TextField
+import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import com.kadhiravan.foodtracker.data.local.FoodItem
 
+/** Search box for [FoodDatabaseScreen] embedded in the History tab's food catalog section. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun FoodDatabaseScreen(viewModel: FoodDatabaseViewModel, modifier: Modifier = Modifier) {
-    val foods by viewModel.foods.collectAsState()
-    val query by viewModel.query.collectAsState()
-    var editingFood by remember { mutableStateOf<FoodItem?>(null) }
-    var showNewFoodDialog by remember { mutableStateOf(false) }
-
-    Scaffold(
-        modifier = modifier,
-        topBar = { TopAppBar(title = { Text("Food Database") }) },
-        floatingActionButton = {
-            FloatingActionButton(onClick = { showNewFoodDialog = true }) {
-                Icon(Icons.Default.Add, contentDescription = "Add food")
-            }
-        }
-    ) { padding ->
-        Column(modifier = Modifier.padding(padding).fillMaxSize().padding(16.dp)) {
-            OutlinedTextField(
+fun FoodSearchBar(query: String, onQueryChange: (String) -> Unit, modifier: Modifier = Modifier) {
+    Surface(
+        color = MaterialTheme.colorScheme.surfaceVariant,
+        shape = RoundedCornerShape(28.dp),
+        modifier = modifier.fillMaxWidth()
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(start = 18.dp)) {
+            Icon(
+                Icons.Default.Search,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(18.dp)
+            )
+            TextField(
                 value = query,
-                onValueChange = viewModel::onQueryChange,
-                label = { Text("Search foods") },
+                onValueChange = onQueryChange,
+                placeholder = { Text("Search foods") },
                 singleLine = true,
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                    disabledIndicatorColor = Color.Transparent
+                ),
                 modifier = Modifier.fillMaxWidth()
             )
-            Spacer(Modifier.height(12.dp))
-            LazyColumn {
-                items(foods, key = { it.id }) { food ->
-                    FoodRow(
-                        food = food,
-                        onEdit = { editingFood = food },
-                        onDelete = { viewModel.delete(food) }
-                    )
-                }
-            }
         }
-    }
-
-    if (showNewFoodDialog) {
-        FoodEditDialog(
-            initial = null,
-            onDismiss = { showNewFoodDialog = false },
-            onSave = {
-                viewModel.save(it)
-                showNewFoodDialog = false
-            }
-        )
-    }
-
-    editingFood?.let { food ->
-        FoodEditDialog(
-            initial = food,
-            onDismiss = { editingFood = null },
-            onSave = {
-                viewModel.save(it)
-                editingFood = null
-            }
-        )
     }
 }
 
 @Composable
-private fun FoodRow(food: FoodItem, onEdit: () -> Unit, onDelete: () -> Unit) {
-    Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp)) {
+fun FoodRow(food: FoodItem, onEdit: () -> Unit, onDelete: () -> Unit, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+    ) {
         Row(
-            modifier = Modifier.fillMaxWidth().padding(12.dp),
+            modifier = Modifier.fillMaxWidth().padding(14.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Column(modifier = Modifier.weight(1f)) {
+            Surface(
+                color = MaterialTheme.colorScheme.primaryContainer,
+                shape = CircleShape,
+                modifier = Modifier.size(36.dp)
+            ) {
+                Icon(
+                    Icons.Default.Restaurant,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimaryContainer,
+                    modifier = Modifier.padding(9.dp)
+                )
+            }
+            Column(modifier = Modifier.weight(1f).padding(start = 12.dp)) {
                 Text(food.name, style = MaterialTheme.typography.bodyLarge)
                 Text(
                     "${food.caloriesPerServing} kcal / ${food.servingUnit}",
@@ -118,17 +108,17 @@ private fun FoodRow(food: FoodItem, onEdit: () -> Unit, onDelete: () -> Unit) {
                 )
             }
             IconButton(onClick = onEdit) {
-                Icon(Icons.Default.Edit, contentDescription = "Edit ${food.name}")
+                Icon(Icons.Default.Edit, contentDescription = "Edit ${food.name}", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             IconButton(onClick = onDelete) {
-                Icon(Icons.Default.Delete, contentDescription = "Delete ${food.name}")
+                Icon(Icons.Default.Delete, contentDescription = "Delete ${food.name}", tint = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
 }
 
 @Composable
-private fun FoodEditDialog(
+fun FoodEditDialog(
     initial: FoodItem?,
     onDismiss: () -> Unit,
     onSave: (FoodItem) -> Unit

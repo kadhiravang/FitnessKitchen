@@ -8,5 +8,8 @@ data class ParsedFoodItem(
     val quantity: Double,
     val unit: String,
     val calories: Int,
+    val proteinG: Double = 0.0,
+    val carbsG: Double = 0.0,
+    val fatG: Double = 0.0,
     val matchedKnownFood: Boolean = false
 )

@@ -9,11 +9,18 @@ import androidx.sqlite.db.SupportSQLiteDatabase
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
-@Database(entities = [FoodItem::class, LogEntry::class], version = 1, exportSchema = false)
+@Database(
+    entities = [FoodItem::class, LogEntry::class, ChatMessage::class, WeightEntry::class, ProgressPhoto::class],
+    version = 6,
+    exportSchema = false
+)
 @TypeConverters(Converters::class)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun foodItemDao(): FoodItemDao
     abstract fun logEntryDao(): LogEntryDao
+    abstract fun chatMessageDao(): ChatMessageDao
+    abstract fun weightEntryDao(): WeightEntryDao
+    abstract fun progressPhotoDao(): ProgressPhotoDao
 
     companion object {
         @Volatile
@@ -25,14 +32,15 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "foodtracker.db"
-                ).addCallback(object : RoomDatabase.Callback() {
-                    override fun onCreate(db: SupportSQLiteDatabase) {
-                        super.onCreate(db)
-                        appScope.launch {
-                            instance?.foodItemDao()?.insertAll(SeedData.foods)
+                ).fallbackToDestructiveMigration()
+                    .addCallback(object : RoomDatabase.Callback() {
+                        override fun onCreate(db: SupportSQLiteDatabase) {
+                            super.onCreate(db)
+                            appScope.launch {
+                                instance?.foodItemDao()?.insertAll(SeedData.foods)
+                            }
                         }
-                    }
-                }).build().also { instance = it }
+                    }).build().also { instance = it }
             }
         }
     }

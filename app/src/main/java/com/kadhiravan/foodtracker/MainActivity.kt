@@ -19,8 +19,11 @@ class MainActivity : ComponentActivity() {
                 AppNavHost(
                     foodRepository = app.foodRepository,
                     logRepository = app.logRepository,
-                    voiceParsingRepository = app.voiceParsingRepository,
-                    securePrefs = app.securePrefs
+                    chatRepository = app.chatRepository,
+                    weightRepository = app.weightRepository,
+                    progressPhotoRepository = app.progressPhotoRepository,
+                    securePrefs = app.securePrefs,
+                    backupManager = app.backupManager
                 )
             }
         }

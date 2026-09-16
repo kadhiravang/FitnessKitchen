@@ -12,7 +12,14 @@ class FoodRepository(private val foodItemDao: FoodItemDao) {
 
     suspend fun findByName(name: String): FoodItem? = foodItemDao.findByName(name)
 
-    suspend fun upsertFromVoiceEntry(name: String, unit: String, caloriesPerServing: Int) {
+    suspend fun upsertFromVoiceEntry(
+        name: String,
+        unit: String,
+        caloriesPerServing: Int,
+        proteinG: Double? = null,
+        carbsG: Double? = null,
+        fatG: Double? = null
+    ) {
         val existing = foodItemDao.findByName(name)
         if (existing == null) {
             foodItemDao.insert(
@@ -20,6 +27,9 @@ class FoodRepository(private val foodItemDao: FoodItemDao) {
                     name = name,
                     servingUnit = unit,
                     caloriesPerServing = caloriesPerServing,
+                    proteinG = proteinG,
+                    carbsG = carbsG,
+                    fatG = fatG,
                     isCustom = true
                 )
             )

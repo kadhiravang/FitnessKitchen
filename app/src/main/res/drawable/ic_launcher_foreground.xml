@@ -1,12 +1,43 @@
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp"
     android:height="108dp"
-    android:viewportWidth="108"
-    android:viewportHeight="108">
+    android:viewportWidth="400"
+    android:viewportHeight="400">
+    <!-- bowl -->
     <path
-        android:fillColor="#FFFFFF"
-        android:pathData="M54,24 C40,24 30,34 30,48 C30,58 36,66 44,70 L44,84 C44,86.2 45.8,88 48,88 L60,88 C62.2,88 64,86.2 64,84 L64,70 C72,66 78,58 78,48 C78,34 68,24 54,24 Z" />
+        android:fillColor="#FFFAF3"
+        android:pathData="M110,245 Q110,325 200,325 Q290,325 290,245 Z" />
     <path
-        android:fillColor="#2E7D32"
-        android:pathData="M44,54 L64,54 L64,60 L44,60 Z" />
+        android:fillColor="#E8D3AE"
+        android:pathData="M118,246 A82,15 0 1,0 282,246 A82,15 0 1,0 118,246 Z" />
+
+    <!-- greens -->
+    <path
+        android:fillColor="#4C7A17"
+        android:pathData="M138,214 m-22,0 a22,22 0 1,0 44,0 a22,22 0 1,0 -44,0" />
+    <path
+        android:fillColor="#5E9A17"
+        android:pathData="M164,206 m-18,0 a18,18 0 1,0 36,0 a18,18 0 1,0 -36,0" />
+    <path
+        android:fillColor="#7FC72E"
+        android:pathData="M148,190 m-13,0 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0" />
+
+    <!-- chicken drumstick -->
+    <path
+        android:fillColor="#FFFAF3"
+        android:pathData="M256,170 L274,151 L284,161 L266,180 Z" />
+    <path
+        android:fillColor="#D99A4E"
+        android:pathData="M231,236 C213,216 217,187 245,177 C270,168 290,184 288,209 C286,233 263,250 244,248 C234,247 225,244 231,236 Z" />
+    <path
+        android:fillColor="#F2C07E"
+        android:pathData="M241,198 m-9,0 a9,9 0 1,0 18,0 a9,9 0 1,0 -18,0" />
+
+    <!-- tomato / carrot -->
+    <path
+        android:fillColor="#FA114F"
+        android:pathData="M184,226 m-14,0 a14,14 0 1,0 28,0 a14,14 0 1,0 -28,0" />
+    <path
+        android:fillColor="#FF6B3D"
+        android:pathData="M208,203 m-10,0 a10,10 0 1,0 20,0 a10,10 0 1,0 -20,0" />
 </vector>

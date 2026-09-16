@@ -1,120 +1,201 @@
 package com.kadhiravan.foodtracker.ui.home
 
+import android.Manifest
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.automirrored.filled.ArrowForward
-import androidx.compose.material.icons.filled.Mic
-import androidx.compose.material3.Card
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material3.ExperimentalMaterial3Api
-import androidx.compose.material3.ExtendedFloatingActionButton
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
-import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.dp
+import androidx.core.content.ContextCompat
+import androidx.core.content.FileProvider
 import com.kadhiravan.foodtracker.data.local.MealType
+import com.kadhiravan.foodtracker.data.prefs.SecurePrefs
 import com.kadhiravan.foodtracker.ui.components.MealSection
-import com.kadhiravan.foodtracker.util.DateUtils
+import java.io.File
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HomeScreen(
     viewModel: HomeViewModel,
-    onAddViaVoice: () -> Unit,
+    securePrefs: SecurePrefs,
+    onOpenProgressGallery: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    val weeklyTrend by viewModel.weeklyTrend.collectAsState()
+    val weightHistory by viewModel.weightHistory.collectAsState()
+    val selectedDayPhoto by viewModel.selectedDayPhoto.collectAsState()
+
+    val context = LocalContext.current
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestPermission()
+    ) {}
+    LaunchedEffect(Unit) {
+        if (Build.VERSION.SDK_INT >= 33 &&
+            ContextCompat.checkSelfPermission(context, Manifest.permission.POST_NOTIFICATIONS)
+            != PackageManager.PERMISSION_GRANTED
+        ) {
+            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+        }
+    }
+
+    var pendingPhotoFile by remember { mutableStateOf<File?>(null) }
+    val takePictureLauncher = rememberLauncherForActivityResult(ActivityResultContracts.TakePicture()) { success ->
+        if (success) {
+            pendingPhotoFile?.let { file -> viewModel.saveProgressPhoto(file.absolutePath) }
+        }
+        pendingPhotoFile = null
+    }
+    fun launchCamera() {
+        val photosDir = File(context.filesDir, "progress_photos").apply { mkdirs() }
+        val file = File(photosDir, "progress_${System.currentTimeMillis()}.jpg")
+        pendingPhotoFile = file
+        val uri = FileProvider.getUriForFile(context, "${context.packageName}.fileprovider", file)
+        takePictureLauncher.launch(uri)
+    }
+
+    val pickImageLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.PickVisualMedia()
+    ) { uri: Uri? ->
+        if (uri != null) {
+            val photosDir = File(context.filesDir, "progress_photos").apply { mkdirs() }
+            val file = File(photosDir, "progress_${System.currentTimeMillis()}.jpg")
+            context.contentResolver.openInputStream(uri)?.use { input ->
+                file.outputStream().use { output -> input.copyTo(output) }
+            }
+            viewModel.saveProgressPhoto(file.absolutePath)
+        }
+    }
+
+    var showManualEntryDialog by remember { mutableStateOf(false) }
 
     Scaffold(
         modifier = modifier,
-        topBar = {
-            TopAppBar(title = { Text("Saapadu") })
-        },
+        containerColor = MaterialTheme.colorScheme.background,
+        // Diary has no TopAppBar of its own to consume the status bar inset (unlike the
+        // other tabs), so it needs to ask for it explicitly now that the outer nav Scaffold
+        // no longer applies it automatically.
+        contentWindowInsets = WindowInsets.statusBars,
         floatingActionButton = {
-            ExtendedFloatingActionButton(
-                onClick = onAddViaVoice,
-                icon = { Icon(Icons.Default.Mic, contentDescription = null) },
-                text = { Text("Log by voice") }
-            )
+            FloatingActionButton(onClick = { showManualEntryDialog = true }) {
+                Icon(Icons.Default.Add, contentDescription = "Add food manually")
+            }
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .padding(padding)
-                .fillMaxSize()
-                .padding(16.dp)
+        val mealOrder = listOf(MealType.BREAKFAST, MealType.LUNCH, MealType.SNACK, MealType.DINNER)
+        val nonEmptyMeals = mealOrder.filter { uiState.entriesByMeal[it]?.isNotEmpty() == true }
+
+        LazyColumn(
+            modifier = Modifier.padding(padding).fillMaxSize().padding(horizontal = 16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                IconButton(onClick = viewModel::goToPreviousDay) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Previous day")
-                }
-                Text(
-                    DateUtils.isoToDisplay(uiState.date),
-                    style = MaterialTheme.typography.titleMedium
+            item {
+                WeekDayPicker(
+                    days = weeklyTrend,
+                    selectedDate = uiState.date,
+                    calorieGoal = uiState.calorieGoal,
+                    calorieBufferKcal = uiState.calorieBufferKcal,
+                    onSelectDate = viewModel::selectDate,
+                    onPreviousWeek = viewModel::goToPreviousWeek,
+                    onNextWeek = viewModel::goToNextWeek,
+                    modifier = Modifier.padding(top = 12.dp)
                 )
-                IconButton(onClick = viewModel::goToNextDay) {
-                    Icon(Icons.AutoMirrored.Filled.ArrowForward, contentDescription = "Next day")
-                }
             }
 
-            Card(modifier = Modifier.fillMaxWidth().padding(vertical = 12.dp)) {
-                Column(modifier = Modifier.padding(16.dp)) {
-                    Text("Total: ${uiState.totalCalories} kcal", style = MaterialTheme.typography.headlineSmall)
-                    if (uiState.calorieGoal > 0) {
-                        Text(
-                            "Goal: ${uiState.calorieGoal} kcal",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                        LinearProgressIndicator(
-                            progress = { (uiState.totalCalories.toFloat() / uiState.calorieGoal).coerceIn(0f, 1f) },
-                            modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
-                        )
-                    }
-                }
+            item {
+                DiarySummaryCard(
+                    totalCalories = uiState.totalCalories,
+                    calorieGoal = uiState.calorieGoal,
+                    calorieBufferKcal = uiState.calorieBufferKcal,
+                    proteinG = uiState.totalProteinG,
+                    carbsG = uiState.totalCarbsG,
+                    fatG = uiState.totalFatG,
+                    proteinGoalG = uiState.proteinGoalG,
+                    carbsGoalG = uiState.carbsGoalG,
+                    fatGoalG = uiState.fatGoalG
+                )
             }
 
-            val mealOrder = listOf(MealType.BREAKFAST, MealType.LUNCH, MealType.SNACK, MealType.DINNER)
-            val nonEmptyMeals = mealOrder.filter { uiState.entriesByMeal[it]?.isNotEmpty() == true }
+            item {
+                WeightProgressCard(
+                    history = weightHistory,
+                    targetWeightKg = securePrefs.targetWeightKg,
+                    onLogWeight = viewModel::logWeight
+                )
+            }
+
+            item {
+                ProgressPhotoCard(
+                    photo = selectedDayPhoto,
+                    onTakePhoto = { launchCamera() },
+                    onPickFromGallery = {
+                        pickImageLauncher.launch(
+                            androidx.activity.result.PickVisualMediaRequest(
+                                ActivityResultContracts.PickVisualMedia.ImageOnly
+                            )
+                        )
+                    },
+                    onDelete = viewModel::deleteProgressPhoto,
+                    onOpenGallery = onOpenProgressGallery
+                )
+            }
 
             if (nonEmptyMeals.isEmpty()) {
-                Text(
-                    "Nothing logged yet — tap \"Log by voice\" to get started.",
-                    style = MaterialTheme.typography.bodyLarge,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.padding(top = 32.dp)
-                )
-            } else {
-                LazyColumn(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                    items(nonEmptyMeals) { meal ->
-                        MealSection(
-                            mealType = meal,
-                            entries = uiState.entriesByMeal[meal].orEmpty(),
-                            onDeleteEntry = viewModel::deleteEntry
-                        )
-                    }
+                item {
+                    Text(
+                        "Nothing logged yet — head to Chat and tell me what you ate, or tap + to add it yourself.",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(top = 20.dp, bottom = 24.dp)
+                    )
                 }
+            } else {
+                items(nonEmptyMeals) { meal ->
+                    MealSection(
+                        mealType = meal,
+                        entries = uiState.entriesByMeal[meal].orEmpty(),
+                        onDeleteEntry = viewModel::deleteEntry
+                    )
+                }
+                item { androidx.compose.foundation.layout.Spacer(Modifier.height(12.dp)) }
             }
         }
+    }
+
+    if (showManualEntryDialog) {
+        ManualEntryDialog(
+            onDismiss = { showManualEntryDialog = false },
+            onSave = { name, quantity, unit, calories, proteinG, carbsG, fatG, mealType ->
+                viewModel.addManualEntry(name, quantity, unit, calories, proteinG, carbsG, fatG, mealType)
+                showManualEntryDialog = false
+            }
+        )
     }
 }

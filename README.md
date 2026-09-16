@@ -1,20 +1,25 @@
-# Saapadu — South Indian Food Tracker
+# FitnessKitchen — South Indian Food Tracker
 
 A native Android app (Kotlin + Jetpack Compose) for tracking calories with a food
 database you control — built to cover South Indian dishes that mainstream calorie
-apps like Fitia don't. The headline feature: tap the mic, say what you ate, and get
-back an editable list of foods + calories to confirm.
+apps like Fitia don't. The headline feature: a running **chat** with an AI
+nutrition assistant, like talking to ChatGPT/Claude — type or speak naturally,
+and if it doesn't already know a dish, it asks a quick clarifying question
+instead of guessing, then hands you an editable confirm card before anything
+is logged.
 
-- **Voice logging**: on-device speech-to-text, then the transcript is sent to
-  NVIDIA's hosted `deepseek-ai/deepseek-v4-flash-0731` model to extract a
-  structured food list, grounded against your own food database so known dishes
-  get accurate calories instead of AI guesses.
+- **Conversational logging** (`ui/chat`): one continuous chat thread, backed by
+  NVIDIA's hosted `deepseek-ai/deepseek-v4-flash-0731` model. The assistant either
+  replies conversationally (asking for detail on an unfamiliar recipe) or, once
+  confident, replies with a short line plus an inline food-log card you edit and
+  confirm — nothing is ever logged without that confirm step. Grounded against
+  your own food database so known dishes get accurate calories instead of guesses.
 - **Your food database**: seeded with ~25 common South Indian dishes (idli, dosa,
   sambar, chutneys, pongal, biryani, etc.) and fully editable — add anything you
   actually eat.
-- Everything (food catalog, daily log) is stored locally on-device in a Room/SQLite
-  database. Only the transcript + your food list are sent to NVIDIA's API for
-  parsing; nothing else leaves the device.
+- Everything (food catalog, daily log, chat history) is stored locally on-device
+  in a Room/SQLite database. Only the conversation + your food list are sent to
+  NVIDIA's API for parsing; nothing else leaves the device.
 
 ## Build environment: Docker
 
@@ -75,26 +80,30 @@ Android SDK on this machine at all.
 2. Install and open the app, go to **Settings**, paste in the API key (stored
    encrypted on-device via `EncryptedSharedPreferences` — never hardcoded, never
    backed up).
-3. Grant microphone permission when prompted.
-4. From **Today**, tap **Log by voice**, and say something like *"two idlis and
-   one dosa with sambar and coconut chutney"*. Confirm/edit the parsed list, pick
-   a meal, save.
-5. Check **Foods** to see/edit the South Indian dish catalog, or add your own.
+3. Grant microphone permission when prompted (only needed the first time you tap
+   the mic in Chat).
+4. On the **Chat** tab, type or tap the mic and say something like *"two idlis
+   and one dosa with sambar and coconut chutney"*. For something the assistant
+   doesn't recognize, it'll ask a follow-up — answer it, then a confirm card
+   appears; edit anything, pick a meal, tap Confirm.
+5. Check **Diary** for the day's totals, **Foods** to see/edit the South Indian
+   dish catalog, and **History** to browse past days.
 
 ## Project layout
 
 ```
 app/src/main/java/com/kadhiravan/foodtracker/
-  data/local/        Room entities, DAOs, database, seed data (South Indian dishes)
-  data/remote/        NVIDIA chat-completions client + parsed-item DTO
+  data/local/        Room entities/DAOs (food catalog, log entries, chat messages), seed data
+  data/remote/        NVIDIA chat-completions client (multi-turn) + fenced-JSON log-card parser
   data/repository/    Thin repositories the ViewModels talk to
   data/prefs/         Encrypted storage for the API key + settings
-  ui/home/             Today's log, grouped by meal
-  ui/voice/            Mic capture -> transcript -> AI parse -> editable confirm list
+  ui/chat/             The main chat thread: bubbles, typing indicator, inline confirm card
+  ui/home/             "Diary" tab — a day's log grouped by meal
+  ui/voice/            Mic capture wrapper (android.speech.SpeechRecognizer), used by Chat
   ui/fooddb/           Food catalog CRUD
   ui/history/           Past days
   ui/settings/         API key + daily calorie goal
-  ui/navigation/       Bottom-nav + NavHost wiring it all together
+  ui/navigation/       Bottom-nav + NavHost wiring it all together (Chat is the start destination)
 ```
 
 ## Notes
@@ -107,11 +116,16 @@ app/src/main/java/com/kadhiravan/foodtracker/
 
 - Calorie values in the seed data are reasonable per-serving estimates, not lab
   measurements — edit anything from the Foods screen.
-- Voice parsing calls `https://integrate.api.nvidia.com/v1/chat/completions`
-  with your API key sent as a Bearer token directly from the device; no backend
-  server is involved.
+- Chat calls `https://integrate.api.nvidia.com/v1/chat/completions` with your API
+  key sent as a Bearer token directly from the device; no backend server is
+  involved. Each turn resends up to the last 20 messages as context so the
+  assistant remembers the conversation, capped to bound token cost on a
+  long-running thread.
+- The database schema bumped to version 2 (added a `chat_messages` table) with
+  `fallbackToDestructiveMigration()` — since there's no real user data to
+  preserve yet, a schema change just wipes and reseeds the local DB rather than
+  writing a migration.
 - Verified: `docker build -t foodtracker-build .` and
   `docker run --rm -v "$PWD":/workspace -w /workspace foodtracker-build gradle assembleDebug`
-  both succeed end-to-end and produce `app/build/outputs/apk/debug/app-debug.apk`.
-  I haven't run the app on-device (no emulator/device attached from this
-  environment) — that's the remaining step, on your Pixel 6a via `adb install`.
+  succeed end-to-end, and the resulting APK has been installed and run on a
+  physical Pixel 6a via `adb`.

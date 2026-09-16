@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.kadhiravan.foodtracker.data.local.LogEntry
 
@@ -26,8 +27,16 @@ fun LogEntryRow(entry: LogEntry, onDelete: () -> Unit, modifier: Modifier = Modi
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column {
-            Text(entry.foodName, style = MaterialTheme.typography.bodyLarge)
+        // Without a weight, an unbroken long food name pushes the calorie/delete side out
+        // of the row (or off-screen) instead of wrapping — constrain it to the remaining
+        // space after the right-hand side claims what it needs.
+        Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
+            Text(
+                entry.foodName,
+                style = MaterialTheme.typography.bodyLarge,
+                maxLines = 2,
+                overflow = TextOverflow.Ellipsis
+            )
             Text(
                 "${formatQuantity(entry.quantity)} ${entry.unit}",
                 style = MaterialTheme.typography.bodySmall,
