@@ -88,7 +88,11 @@ fun ProfilePicturePicker(
     onPictureChanged: (String) -> Unit,
     onCropChanged: (ProfilePicCrop?) -> Unit,
     modifier: Modifier = Modifier,
-    size: Dp = 96.dp
+    size: Dp = 96.dp,
+    // Standalone usage (onboarding) wants to self-center in whatever width it's given;
+    // placed beside other content (e.g. the You tab's name field) it should just take its
+    // own size instead of claiming the full row width.
+    centerInParent: Boolean = true
 ) {
     val context = LocalContext.current
     var showViewer by remember { mutableStateOf(false) }
@@ -137,7 +141,10 @@ fun ProfilePicturePicker(
         pickImageLauncher.launch(PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly))
     }
 
-    Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+    Box(
+        modifier = if (centerInParent) modifier.fillMaxWidth() else modifier,
+        contentAlignment = Alignment.Center
+    ) {
         Box(
             modifier = Modifier
                 .size(size)

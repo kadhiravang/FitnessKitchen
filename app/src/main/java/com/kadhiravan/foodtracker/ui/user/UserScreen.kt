@@ -122,19 +122,25 @@ fun UserScreen(securePrefs: SecurePrefs, weightRepository: WeightRepository, mod
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Card(modifier = Modifier.fillMaxWidth()) {
-                Column(modifier = Modifier.padding(20.dp)) {
+                Row(
+                    modifier = Modifier.padding(20.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
                     ProfilePicturePicker(
                         picturePath = profilePicPath,
                         cropRect = profilePicCrop,
                         onPictureChanged = { profilePicPath = it; securePrefs.profilePicPath = it },
-                        onCropChanged = { profilePicCrop = it; securePrefs.writeProfilePicCrop(it) }
+                        onCropChanged = { profilePicCrop = it; securePrefs.writeProfilePicCrop(it) },
+                        size = 112.dp,
+                        centerInParent = false
                     )
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it; saved = false },
                         label = { Text("Name") },
                         singleLine = true,
-                        modifier = Modifier.fillMaxWidth().padding(top = 16.dp)
+                        modifier = Modifier.weight(1f)
                     )
                 }
             }
