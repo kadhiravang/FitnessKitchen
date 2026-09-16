@@ -17,7 +17,7 @@ import java.util.concurrent.TimeUnit
 private data class CloudTranscribeResponse(val text: String)
 
 /**
- * Talks to OpenAI's hosted Whisper transcription endpoint — the alternative to
+ * Talks to OpenAI's hosted Whisper transcription endpoint, the alternative to
  * [LocalWhisperClient] for users who don't want to run whisper-server/ on their own
  * machine. Needs an OpenAI API key with billing set up (Whisper isn't on the free tier).
  */
@@ -36,7 +36,7 @@ class CloudWhisperClient {
             .addFormDataPart("file", "audio.wav", wavBytes.toRequestBody("audio/wav".toMediaType()))
 
         // The API expects a bare ISO-639-1 code (e.g. "en"), not our stored BCP-47 tag
-        // (e.g. "en-IN") — trim off the region subtag rather than sending it as-is.
+        // (e.g. "en-IN"), trim off the region subtag rather than sending it as-is.
         val isoLanguage = language?.substringBefore('-')?.takeIf { it.isNotBlank() }
         if (isoLanguage != null) bodyBuilder.addFormDataPart("language", isoLanguage)
 

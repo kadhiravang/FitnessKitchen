@@ -29,7 +29,7 @@ fun LogEntryRow(entry: LogEntry, onEdit: () -> Unit, onDelete: () -> Unit, modif
         verticalAlignment = Alignment.CenterVertically
     ) {
         // Without a weight, an unbroken long food name pushes the calorie/delete side out
-        // of the row (or off-screen) instead of wrapping — constrain it to the remaining
+        // of the row (or off-screen) instead of wrapping, constrain it to the remaining
         // space after the right-hand side claims what it needs.
         Column(modifier = Modifier.weight(1f).padding(end = 12.dp)) {
             Text(

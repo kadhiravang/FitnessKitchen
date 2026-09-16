@@ -71,15 +71,15 @@ import coil.compose.AsyncImage
 import java.io.File
 import kotlin.math.roundToInt
 
-/** A square region of the *original* profile picture file to display — normalized (0..1)
+/** A square region of the *original* profile picture file to display, normalized (0..1)
  * so it survives independent of whatever resolution the image happens to be decoded at.
  * Never bakes a new file: the original is untouched, this is applied at display time. */
 data class ProfilePicCrop(val left: Float, val top: Float, val size: Float)
 
-/** Centered circular avatar, backed by a single file in app-private storage — shared by
+/** Centered circular avatar, backed by a single file in app-private storage, shared by
  * onboarding and the You tab so both stay in sync. Tapping it opens a full-screen viewer
  * with Edit/Remove actions instead of exposing camera/gallery/remove as buttons up front.
- * Cropping never replaces [picturePath] — it only changes [cropRect], the region of the
+ * Cropping never replaces [picturePath], it only changes [cropRect], the region of the
  * original file to show, so re-cropping later always has the full original to work from. */
 @Composable
 fun ProfilePicturePicker(
@@ -104,7 +104,7 @@ fun ProfilePicturePicker(
         return File(dir, "profile_${System.currentTimeMillis()}.jpg")
     }
 
-    /** Only for an actually new photo (camera/gallery) — replaces the file on disk and
+    /** Only for an actually new photo (camera/gallery), replaces the file on disk and
      * clears any crop, since a crop region from the old photo means nothing on a new one. */
     fun replacePicture(newFile: File) {
         val old = picturePath.takeIf { it.isNotBlank() }?.let { File(it) }
@@ -223,7 +223,7 @@ fun ProfilePicturePicker(
     }
 }
 
-/** Decodes [picturePath] and, if [cropRect] is set, cuts out just that square region —
+/** Decodes [picturePath] and, if [cropRect] is set, cuts out just that square region , 
  * otherwise renders the whole file with the given [contentScale] (default center-crop).
  * Nothing is ever written back to disk here; this runs fresh (cached per path+crop) every
  * time the picture is displayed. */
@@ -273,7 +273,7 @@ private fun CroppedProfileImage(
     }
 }
 
-/** Full-screen preview of the current photo with Edit/Remove actions — reached by tapping
+/** Full-screen preview of the current photo with Edit/Remove actions, reached by tapping
  * the avatar, rather than exposing those actions as buttons next to it all the time. */
 @Composable
 private fun ProfilePictureViewerDialog(
@@ -408,7 +408,7 @@ private fun SourceOptionRow(
     }
 }
 
-/** Downsamples before decoding so a full-resolution camera capture doesn't risk an OOM —
+/** Downsamples before decoding so a full-resolution camera capture doesn't risk an OOM , 
  * an avatar never needs more than this many pixels on a side even at high DPI. */
 private fun decodeSampledBitmap(path: String, maxDim: Int): Bitmap? {
     val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
@@ -422,13 +422,13 @@ private fun decodeSampledBitmap(path: String, maxDim: Int): Bitmap? {
     return BitmapFactory.decodeFile(path, options)
 }
 
-/** A fixed circular frame stays put in the center — exactly the same circle the avatar itself
- * is clipped to — while the photo is what moves: drag to slide it around underneath, pinch to
+/** A fixed circular frame stays put in the center, exactly the same circle the avatar itself
+ * is clipped to, while the photo is what moves: drag to slide it around underneath, pinch to
  * zoom it in. This mirrors the classic profile-photo picker pattern (Instagram, WhatsApp) where
  * the frame never moves and the photo does, which reads as more natural than a resizable crop
  * rectangle for a shape that's always going to be this one circle.
  *
- * Critically, "Done" never writes a new file — [onCropped] only reports which normalized
+ * Critically, "Done" never writes a new file, [onCropped] only reports which normalized
  * region of the *original* [picturePath] to remember, so re-cropping later (or just changing
  * your mind) always starts from the untouched original, never a lossy re-crop of a re-crop. */
 @Composable
@@ -452,12 +452,12 @@ private fun ProfilePictureCropDialog(
 
     val bw = sourceBitmap.width.toFloat()
     val bh = sourceBitmap.height.toFloat()
-    // A pure "cover" fit leaves the already-fitting axis with zero pan room — for anything
+    // A pure "cover" fit leaves the already-fitting axis with zero pan room, for anything
     // but a perfectly square source, one drag direction would do nothing at the default
     // zoom, reading as broken. A generous overscan margin guarantees both axes always have
-    // real slack to drag with — including sliding a tall photo all the way up to its top
-    // edge or down to its bottom edge — without needing to pinch first. zoom=1f (the default)
-    // sits at this margin, not at true cover fit — minZoom below compensates so pinching out
+    // real slack to drag with, including sliding a tall photo all the way up to its top
+    // edge or down to its bottom edge, without needing to pinch first. zoom=1f (the default)
+    // sits at this margin, not at true cover fit, minZoom below compensates so pinching out
     // can still reach all the way back down to true cover, instead of stopping 1.6x short of it.
     val overscan = 1.6f
     val baseScale = maxOf(viewportPx / bw, viewportPx / bh) * overscan
@@ -474,7 +474,7 @@ private fun ProfilePictureCropDialog(
     }
 
     // Resume exactly where the last crop left off, rather than resetting to the default
-    // framing every time — inverse of the "Done" math below.
+    // framing every time, inverse of the "Done" math below.
     val initialState = remember(picturePath, initialCrop) {
         if (initialCrop == null) {
             Triple(1f, 0f, 0f)
@@ -516,7 +516,7 @@ private fun ProfilePictureCropDialog(
                     modifier = Modifier.padding(bottom = 20.dp)
                 )
                 // A stage bigger than the crop circle itself, so the rest of the photo stays
-                // visible (dimmed) around the frame instead of being hard-clipped away — the
+                // visible (dimmed) around the frame instead of being hard-clipped away, the
                 // frame is only a guide overlay here, not a mask on the image underneath.
                 Box(
                     modifier = Modifier
@@ -534,7 +534,7 @@ private fun ProfilePictureCropDialog(
                         }
                 ) {
                     // Sized to its own natural "cover" dimensions and centered, rather than
-                    // relying on ContentScale.Crop's own internal fit-and-clip — layering a
+                    // relying on ContentScale.Crop's own internal fit-and-clip, layering a
                     // second scale system (Crop, then our own graphicsLayer) on top of each
                     // other made the two disagree at the edges, leaving a gap the pan clamp
                     // below didn't account for. This way there's exactly one transform.
@@ -556,7 +556,7 @@ private fun ProfilePictureCropDialog(
                             }
                     )
 
-                    // The actual crop boundary — everything outside it is dimmed but still
+                    // The actual crop boundary, everything outside it is dimmed but still
                     // visible, everything inside stays at full brightness with a thin outline.
                     Canvas(modifier = Modifier.matchParentSize()) {
                         val circle = Path().apply {

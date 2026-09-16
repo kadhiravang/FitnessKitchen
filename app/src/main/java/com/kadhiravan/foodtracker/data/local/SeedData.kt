@@ -2,7 +2,7 @@ package com.kadhiravan.foodtracker.data.local
 
 /**
  * Starter South Indian food catalog. Calories are reasonable per-typical-serving
- * estimates, not lab measurements — edit any of these from the Food Database
+ * estimates, not lab measurements, edit any of these from the Food Database
  * screen once the app is running.
  */
 object SeedData {

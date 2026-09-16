@@ -32,13 +32,13 @@ class GoogleApiException(message: String) : IOException(message)
  * Talks to Google's Gemini REST API (generateContent) to hold a running conversation
  * about what the user ate. The assistant either asks a clarifying question (plain text)
  * or, once confident, replies with a short line plus a fenced ```log block that
- * [LogCardParser] turns into a confirmable food card — grounded two ways: against the
+ * [LogCardParser] turns into a confirmable food card, grounded two ways: against the
  * user's own food catalog (known dishes get accurate calories instead of guesses), and,
  * for anything not already known, via a `lookup_nutrition` function tool backed by real
  * USDA FoodData Central data (see [UsdaNutritionClient]) instead of the model's own
- * memorized guess. This is a genuine tool-call loop — the model decides when to invoke
+ * memorized guess. This is a genuine tool-call loop, the model decides when to invoke
  * the function, our code executes the real lookup, and the result is fed back for a
- * second round before the model produces its final reply — not just repeated guessing.
+ * second round before the model produces its final reply, not just repeated guessing.
  */
 class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClient {
 
@@ -88,29 +88,29 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
             - You have a lookup_nutrition function tool backed by a real nutrition database.
               For any food that ISN'T already in the known-foods list below, call it with a
               simple generic search term for the dish (e.g. "chicken biryani", not the user's
-              exact phrasing) BEFORE answering — it returns real calories/protein/carbs/fat per
+              exact phrasing) BEFORE answering, it returns real calories/protein/carbs/fat per
               100g. Use that as your base, then combine it with the quantity/ingredients the
               user actually described to compute the final totals (adjusting for home-cooking
               factors like extra oil the lookup's reference item might not match exactly).
               If the user describes a custom dish by its ingredients (e.g. "200g chicken,
               2 tsp oil, 1 onion, 100g tomatoes") rather than naming a known dish, look up
               EACH significant ingredient separately instead of guessing at the whole thing
-              — you can call the tool multiple times in the same turn — then sum each
+              (you can call the tool multiple times in the same turn), then sum each
               ingredient's real per-100g values scaled by its own quantity. This is usually
               far more accurate than a single whole-dish lookup for something home-made.
               Only skip the lookup for an exact known-foods match. The lookup's search is
-              keyword-based, not smart — check its "description" field is genuinely the same
+              keyword-based, not smart, check its "description" field is genuinely the same
               food you asked about before trusting the numbers (e.g. a "chicken 65" search
               matching a cooking-oil product is a false match, not real data on fried
               chicken). Many South Indian dishes (kothu parotta, rasam, poriyal, specific
-              kuzhambu varieties, etc.) simply aren't in this database at all — if the lookup
+              kuzhambu varieties, etc.) simply aren't in this database at all, if the lookup
               returns found:false, or the match is clearly the wrong food, fall back to your
               own best estimate exactly as if no tool existed, rather than using a bad match.
             """.trimIndent()
         } else {
             """
             - The user usually does NOT know exact quantities, ingredients, or calorie counts
-              themselves — that's why they're asking you. Always make your own reasonable
+              themselves, that's why they're asking you. Always make your own reasonable
               best-effort estimate using typical Indian home-cooking assumptions (average
               serving size, common recipe proportions, usual oil/ghee content).
             """.trimIndent()
@@ -122,14 +122,14 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
 
             Rules:
             - The user may write or speak in English, Tamil (Tamil script or transliterated),
-              or a mix of both — food names are often native Tamil words. Understand them
+              or a mix of both, food names are often native Tamil words. Understand them
               directly and always reply in English.
             - If the user's message isn't about food, just reply naturally and briefly.
             - NEVER leave the user without a number, and almost never ask a clarifying
-              question — log your best-effort result immediately. You can briefly state any
+              question, log your best-effort result immediately. You can briefly state any
               assumption you made in your reply (e.g. "assuming a medium bowl, ~250ml") so
               they can correct it on the card afterward if it's off. Only ask a clarifying
-              question in the rare case where you cannot identify the dish at all — even then,
+              question in the rare case where you cannot identify the dish at all, even then,
               still give your best guess estimate AND the log block in that same reply rather
               than blocking on an answer.
             $groundingRule
@@ -140,17 +140,17 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
               ```log
               {"meals":[{"mealType":"BREAKFAST","items":[{"name":"...","quantity":1,"unit":"piece","calories":120,"proteinG":4.5,"carbsG":18.0,"fatG":3.0,"matchedKnownFood":true}]}]}
               ```
-              This must always be valid JSON — a single top-level object with one "meals"
+              This must always be valid JSON, a single top-level object with one "meals"
               array. If the user describes several meals at once (e.g. logging a whole day),
-              put ALL of them as separate entries inside that same "meals" array — never emit
+              put ALL of them as separate entries inside that same "meals" array, never emit
               more than one ```log block, and never write two JSON objects back to back.
               mealType must be one of BREAKFAST, LUNCH, DINNER, SNACK (pick the most likely
               one based on context/time if not stated). "calories", "proteinG", "carbsG", and
               "fatG" are all TOTALS for the quantity/unit given, not per-unit values. If an
               item matches a known food, scale its caloriesPerServing/proteinG/carbsG/fatG by
               quantity and set matchedKnownFood true; otherwise set matchedKnownFood false.
-            - Keep every reply short — a couple of sentences at most, like a text message.
-            - You're told what the user has already eaten today below. Use it for context —
+            - Keep every reply short, a couple of sentences at most, like a text message.
+            - You're told what the user has already eaten today below. Use it for context , 
               e.g. if asked "what should I eat now" or "how am I doing today", answer using
               those real numbers instead of guessing. Offer a brief suggestion when it's
               naturally relevant (they're close to/over a typical daily calorie range, a meal
@@ -203,7 +203,7 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
             val functionCalls = parts.mapNotNull { it.functionCall }
             if (functionCalls.isNotEmpty() && round <= MAX_TOOL_ROUNDS) {
                 // A custom dish described ingredient-by-ingredient (oil, veggies, protein,
-                // etc.) needs one lookup per ingredient, not one for the whole dish — Gemini
+                // etc.) needs one lookup per ingredient, not one for the whole dish, Gemini
                 // batches these as several functionCall parts in a single turn rather than
                 // one at a time, so every part has to be answered, not just the first.
                 contents.add(GeminiContent(role = "model", parts = parts))
@@ -235,7 +235,7 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
                 continue
             }
 
-            // Joined rather than just the first part — replies after a tool round can come
+            // Joined rather than just the first part, replies after a tool round can come
             // back split across multiple text parts instead of one.
             val text = parts.mapNotNull { it.text }.joinToString("").takeIf { it.isNotBlank() }
                 ?: throw GoogleApiException("Gemini API returned no content.")
@@ -245,7 +245,7 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
 
     /**
      * Runs the request, retrying with backoff on transient failures (network hiccups,
-     * rate limiting, or an overloaded upstream — 429/503/5xx) so a momentary blip doesn't
+     * rate limiting, or an overloaded upstream, 429/503/5xx) so a momentary blip doesn't
      * force the user to manually resend. Non-transient failures (bad key, bad request)
      * fail immediately.
      */
@@ -263,7 +263,7 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
             val response = try {
                 executeCancellable(request)
             } catch (e: IOException) {
-                // Covers UnknownHostException too — a brief DNS hiccup (common right after
+                // Covers UnknownHostException too, a brief DNS hiccup (common right after
                 // a phone hands off between Wi-Fi and cellular) looks identical to this.
                 Log.d(TAG, "attempt $attempt failed after ${System.currentTimeMillis() - startMs}ms: ${e.javaClass.simpleName}: ${e.message}")
                 if (attempt >= maxAttempts) {
@@ -288,7 +288,7 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
     private fun backoffMs(attempt: Int): Long = (1000L * (1L shl (attempt - 1))).coerceAtMost(8000L)
 
     /**
-     * Suspends until the call completes, but — unlike the blocking [Call.execute] — actually
+     * Suspends until the call completes, but unlike the blocking [Call.execute], it actually
      * aborts the in-flight HTTP call when the coroutine is cancelled (e.g. the user tapped
      * Cancel while a reply was hanging), instead of leaving it running unattended.
      */
@@ -311,10 +311,10 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
 
     private companion object {
         const val TAG = "GoogleApiClient"
-        // Free-tier model. gemini-2.5-flash was retired — the API itself now points
+        // Free-tier model. gemini-2.5-flash was retired, the API itself now points
         // callers to this replacement.
         const val MODEL = "gemini-3.6-flash"
-        // Caps how many tool-call round TRIPS one message can trigger — not how many
+        // Caps how many tool-call round TRIPS one message can trigger, not how many
         // lookups, since Gemini batches several functionCall parts into a single turn
         // when it can (e.g. every ingredient of a custom dish at once). This just stops a
         // confused model from looping indefinitely across turns.
@@ -322,7 +322,7 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
 
         val NUTRITION_LOOKUP_DECLARATION = GeminiFunctionDeclaration(
             name = "lookup_nutrition",
-            description = "Looks up real nutrition facts (calories, protein, carbs, fat — all " +
+            description = "Looks up real nutrition facts (calories, protein, carbs, fat, all " +
                 "per 100g) for a food from the USDA FoodData Central database. Call this for " +
                 "any food that isn't already in the known-foods list, before estimating.",
             parameters = GeminiSchema(
@@ -331,7 +331,7 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
                     "food_name" to GeminiSchema(
                         type = "string",
                         description = "A simple, generic search term for the food or dish " +
-                            "(e.g. \"chicken biryani\", \"idli\") — not the user's exact wording."
+                            "(e.g. \"chicken biryani\", \"idli\"), not the user's exact wording."
                     )
                 ),
                 required = listOf("food_name")
@@ -346,7 +346,7 @@ private data class GeminiPart(
     val functionCall: GeminiFunctionCall? = null,
     val functionResponse: GeminiFunctionResponse? = null,
     // Gemini 3's internal reasoning-state token attached to functionCall (and sometimes
-    // text) parts — must be echoed back verbatim on the part it arrived on when replaying
+    // text) parts, must be echoed back verbatim on the part it arrived on when replaying
     // the model's own turn in a follow-up request, or the API 400s ("missing
     // thought_signature"). We never read this ourselves, only round-trip it.
     val thoughtSignature: String? = null
@@ -373,7 +373,7 @@ private data class GeminiContent(val role: String, val parts: List<GeminiPart>)
 private data class GeminiSystemInstruction(val parts: List<GeminiPart>)
 
 // The Gemini 3.x line replaced 2.5's numeric thinkingBudget with a thinkingLevel enum
-// ("low"/"medium"/"high") — sending the old thinkingBudget field to a 3.x model is
+// ("low"/"medium"/"high"), sending the old thinkingBudget field to a 3.x model is
 // invalid (and has been reported to trigger bogus billing errors on the free tier).
 // "low" keeps replies fast and avoids burning the maxOutputTokens budget on reasoning
 // before the real reply is written.

@@ -7,14 +7,14 @@ import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import com.kadhiravan.foodtracker.R
 
-/** Rounded, warm display face — headings and standalone numbers (the calorie ring, totals). */
+/** Rounded, warm display face, headings and standalone numbers (the calorie ring, totals). */
 val Baloo2 = FontFamily(
     Font(R.font.baloo2_semibold, FontWeight.SemiBold),
     Font(R.font.baloo2_bold, FontWeight.Bold),
     Font(R.font.baloo2_extrabold, FontWeight.ExtraBold)
 )
 
-/** Clean, readable body face — everything else. */
+/** Clean, readable body face, everything else. */
 val NunitoSans = FontFamily(
     Font(R.font.nunitosans_regular, FontWeight.Normal),
     Font(R.font.nunitosans_semibold, FontWeight.SemiBold),

@@ -25,8 +25,8 @@ import com.kadhiravan.foodtracker.ui.components.formatQuantity
 import kotlin.math.roundToInt
 
 /** Edits an already-logged entry. Changing quantity rescales calories and macros
- * automatically, anchored to the entry's original per-unit rate (calories/quantity, etc.)
- * — not to whatever the fields currently show — so repeated quantity edits stay consistent
+ * automatically, anchored to the entry's original per-unit rate (calories/quantity, etc.),
+ * not to whatever the fields currently show, so repeated quantity edits stay consistent
  * even if calories were manually overridden in between. */
 @Composable
 fun EditLogEntryDialog(
@@ -106,7 +106,7 @@ fun EditLogEntryDialog(
                 }
                 Spacer(Modifier.height(8.dp))
                 Text(
-                    "Calories and macros scale with quantity — adjust below if needed",
+                    "Calories and macros scale with quantity, adjust below if needed",
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

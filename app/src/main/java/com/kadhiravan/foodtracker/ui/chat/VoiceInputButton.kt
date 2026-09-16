@@ -23,7 +23,7 @@ import androidx.compose.ui.unit.dp
 
 /**
  * Mic/stop toggle whose waveform rings react to the live input level while listening
- * (driven by [amplitude], 0f..1f from [android.speech.SpeechRecognizer]'s RMS callback) —
+ * (driven by [amplitude], 0f..1f from [android.speech.SpeechRecognizer]'s RMS callback) , 
  * so it visibly breathes with your voice instead of animating on a fixed timer, and only
  * ever stops when [onClick] is tapped.
  */

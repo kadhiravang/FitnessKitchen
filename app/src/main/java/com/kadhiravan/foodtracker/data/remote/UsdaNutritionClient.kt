@@ -24,14 +24,14 @@ data class NutritionFacts(
 )
 
 /**
- * Looks up real, published nutrition data from USDA FoodData Central — the grounding
- * source the chat model reaches for (via function calling — see [GoogleApiClient]) on
+ * Looks up real, published nutrition data from USDA FoodData Central, the grounding
+ * source the chat model reaches for (via function calling, see [GoogleApiClient]) on
  * foods it doesn't already know from the user's own catalog. Free API key, 1,000
  * requests/hour once signed up (fdc.nal.usda.gov/api-key-signup).
  *
  * Values from FDC's `foodNutrients` array are always normalized per 100g regardless of
- * a food's actual serving size — that's FDC's own convention, not something computed
- * here — so callers scale by however many grams the user actually ate.
+ * a food's actual serving size, that's FDC's own convention, not something computed
+ * here, so callers scale by however many grams the user actually ate.
  */
 class UsdaNutritionClient {
 
@@ -58,7 +58,7 @@ class UsdaNutritionClient {
             val root = Json.parseToJsonElement(bodyText).jsonObject
             val candidates = root["foods"]?.jsonArray.orEmpty()
 
-            // FDC's search is keyword-based, not semantic — "chicken 65" has matched a
+            // FDC's search is keyword-based, not semantic, "chicken 65" has matched a
             // sunflower-oil product because both mention "65", which would silently hand
             // back oil's calorie density for a fried-chicken dish. Requiring the query and
             // the matched description to share an actual (non-numeric) word is a cheap but
@@ -77,7 +77,7 @@ class UsdaNutritionClient {
                 ?.jsonObject?.get("value")?.jsonPrimitive?.doubleOrNull
 
             // 1008 = Energy (kcal), 1003 = Protein, 1004 = Total lipid (fat),
-            // 1005 = Carbohydrate, by difference — FDC's standard nutrient IDs.
+            // 1005 = Carbohydrate, by difference, FDC's standard nutrient IDs.
             val calories = valueFor(1008) ?: return@runCatching null
             NutritionFacts(
                 description = relevantFood["description"]?.jsonPrimitive?.contentOrNull ?: query,

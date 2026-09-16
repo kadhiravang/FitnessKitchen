@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
-/** Chat is scoped per day, like the Diary — one continuous thread across weeks was
+/** Chat is scoped per day, like the Diary, one continuous thread across weeks was
  * diluting the model's context with old, unrelated messages. */
 @OptIn(ExperimentalCoroutinesApi::class)
 class ChatViewModel(private val chatRepository: ChatRepository) : ViewModel() {
@@ -49,7 +49,7 @@ class ChatViewModel(private val chatRepository: ChatRepository) : ViewModel() {
         }
     }
 
-    /** Aborts a hanging send — the in-flight HTTP call is cancelled too, not just abandoned. */
+    /** Aborts a hanging send, the in-flight HTTP call is cancelled too, not just abandoned. */
     fun cancelSending() {
         sendJob?.cancel()
         sendJob = null

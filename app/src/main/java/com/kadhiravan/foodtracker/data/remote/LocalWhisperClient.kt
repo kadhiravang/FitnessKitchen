@@ -18,7 +18,7 @@ private data class TranscribeResponse(val text: String)
 
 /**
  * Talks to the local Whisper transcription server run on the user's own laptop (see
- * whisper-server/ setup) — noticeably higher accuracy than Android's built-in
+ * whisper-server/ setup), noticeably higher accuracy than Android's built-in
  * recognizer, but only reachable on the same Wi-Fi network with the server running.
  * [isReachable] lets the caller decide once per session whether to use this path or
  * fall back to the on-device recognizer, rather than failing mid-recording.

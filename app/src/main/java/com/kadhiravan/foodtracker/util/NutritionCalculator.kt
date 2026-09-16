@@ -47,7 +47,7 @@ object NutritionCalculator {
         return NutritionTargets(calorieGoal, proteinG, carbsG, fatG)
     }
 
-    /** Fallback when there isn't a full profile (age/height/sex) yet — a flat 30/40/30
+    /** Fallback when there isn't a full profile (age/height/sex) yet, a flat 30/40/30
      * split of whatever calorie goal is set, same as before this calculator existed. */
     fun fromCalorieGoalOnly(calorieGoal: Int): NutritionTargets {
         if (calorieGoal <= 0) return NutritionTargets(0, 0, 0, 0)
@@ -59,11 +59,11 @@ object NutritionCalculator {
         )
     }
 
-    /** Calories represented by a macro split — protein/carbs at 4 kcal/g, fat at 9 kcal/g. */
+    /** Calories represented by a macro split, protein/carbs at 4 kcal/g, fat at 9 kcal/g. */
     fun caloriesFor(proteinG: Int, carbsG: Int, fatG: Int): Int = proteinG * 4 + carbsG * 4 + fatG * 9
 
     /** Replaces [base]'s macro split with a user-chosen one, but only if it actually fits
-     * within the same calorie goal — an override that silently blew the calorie budget
+     * within the same calorie goal, an override that silently blew the calorie budget
      * would be more confusing than useful, so it's ignored (falls back to [base]) instead. */
     fun applyCustomMacros(base: NutritionTargets, proteinG: Int, carbsG: Int, fatG: Int): NutritionTargets {
         if (proteinG <= 0 && carbsG <= 0 && fatG <= 0) return base

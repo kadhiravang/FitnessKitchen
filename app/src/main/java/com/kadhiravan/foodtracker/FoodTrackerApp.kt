@@ -27,7 +27,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import java.util.concurrent.TimeUnit
 
-/** Minimal hand-rolled DI container — no framework needed for an app this size. */
+/** Minimal hand-rolled DI container, no framework needed for an app this size. */
 class FoodTrackerApp : Application(), Configuration.Provider {
 
     val applicationScope = CoroutineScope(SupervisorJob())
@@ -58,7 +58,7 @@ class FoodTrackerApp : Application(), Configuration.Provider {
     }
 
     // WorkManager builds Workers via reflection by default, which can't supply
-    // WeightReminderWorker's repository dependency — this factory constructs it by hand instead.
+    // WeightReminderWorker's repository dependency, this factory constructs it by hand instead.
     private val weightReminderWorkerFactory by lazy {
         object : WorkerFactory() {
             override fun createWorker(

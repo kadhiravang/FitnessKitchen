@@ -14,14 +14,14 @@ import com.kadhiravan.foodtracker.data.prefs.SpeechLanguage
 
 /**
  * Thin wrapper around [SpeechRecognizer] that drives an in-app mic UI (rather than
- * launching the system dialog) and keeps listening across natural pauses in speech —
- * like a real conversational voice input — until [stopListening] is called explicitly.
+ * launching the system dialog) and keeps listening across natural pauses in speech , 
+ * like a real conversational voice input, until [stopListening] is called explicitly.
  *
  * Android's recognizer treats any brief silence as "done" and ends the session on its
  * own; left alone that cuts the user off mid-sentence. We ask for generous silence
  * thresholds AND transparently restart listening whenever the recognizer ends a segment
  * on its own, accumulating each segment's text so the pause is invisible to the user.
- * Each restart re-triggers Android's audible "start listening" tone — trying to time a
+ * Each restart re-triggers Android's audible "start listening" tone, trying to time a
  * mute/unmute around each individual restart was fragile (the beep's exact timing and
  * audio stream vary by device), so instead we mute for the entire session, start to
  * finish, and only unmute once the user actually stops.
@@ -44,7 +44,7 @@ class SpeechRecognizerController(
     private val audioManager = context.getSystemService(Context.AUDIO_SERVICE) as? AudioManager
 
     // The recognizer's "start/end listening" tone shows up on different streams
-    // depending on device/OEM — mute all the plausible candidates to be safe.
+    // depending on device/OEM, mute all the plausible candidates to be safe.
     private val mutedStreams = intArrayOf(
         AudioManager.STREAM_MUSIC,
         AudioManager.STREAM_NOTIFICATION,
@@ -102,7 +102,7 @@ class SpeechRecognizerController(
                     return
                 }
                 when (error) {
-                    // Benign mid-conversation hiccups — a brief pause or the recognizer
+                    // Benign mid-conversation hiccups, a brief pause or the recognizer
                     // needing a beat to restart. Keep the session going transparently.
                     SpeechRecognizer.ERROR_NO_MATCH,
                     SpeechRecognizer.ERROR_SPEECH_TIMEOUT,
@@ -124,7 +124,7 @@ class SpeechRecognizerController(
         mainHandler.removeCallbacks(maxSessionRunnable)
         mainHandler.postDelayed(maxSessionRunnable, MAX_SESSION_MILLIS)
         // Muted for the whole session (every internal restart included) rather than
-        // toggled per-restart — see the class doc for why.
+        // toggled per-restart, see the class doc for why.
         setSystemSoundsMuted(true)
         beginListeningSegment()
     }
@@ -151,12 +151,12 @@ class SpeechRecognizerController(
             putExtra(RecognizerIntent.EXTRA_PARTIAL_RESULTS, true)
             putExtra(RecognizerIntent.EXTRA_MAX_RESULTS, 1)
             // Generous pause tolerance so a natural breath/pause mid-sentence doesn't
-            // read as "done" — and even if it does, onResults() restarts us anyway.
+            // read as "done", and even if it does, onResults() restarts us anyway.
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_COMPLETE_SILENCE_LENGTH_MILLIS, 2500L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_POSSIBLY_COMPLETE_SILENCE_LENGTH_MILLIS, 2000L)
             putExtra(RecognizerIntent.EXTRA_SPEECH_INPUT_MINIMUM_LENGTH_MILLIS, 15000L)
             // On-device auto language switching (Android 14+): lets a single utterance mix
-            // languages — e.g. an English sentence with a Tamil dish name — without the user
+            // languages, e.g. an English sentence with a Tamil dish name, without the user
             // having to pick one language up front. Silently no-ops on older OS versions.
             if (Build.VERSION.SDK_INT >= 34) {
                 putExtra(RecognizerIntent.EXTRA_ENABLE_LANGUAGE_SWITCH, RecognizerIntent.LANGUAGE_SWITCH_BALANCED)
@@ -192,7 +192,7 @@ class SpeechRecognizerController(
     private fun errorMessage(error: Int): String = when (error) {
         SpeechRecognizer.ERROR_NETWORK, SpeechRecognizer.ERROR_NETWORK_TIMEOUT -> "Network error during speech recognition."
         SpeechRecognizer.ERROR_INSUFFICIENT_PERMISSIONS -> "Microphone permission is required."
-        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Speech recognizer is busy — try again."
+        SpeechRecognizer.ERROR_RECOGNIZER_BUSY -> "Speech recognizer is busy, try again."
         else -> "Speech recognition error ($error)."
     }
 

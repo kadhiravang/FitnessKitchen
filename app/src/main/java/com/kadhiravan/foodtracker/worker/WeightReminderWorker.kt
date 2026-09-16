@@ -18,7 +18,7 @@ import com.kadhiravan.foodtracker.util.DateUtils
 
 /**
  * Runs roughly weekly (scheduled by [com.kadhiravan.foodtracker.FoodTrackerApp]) and nudges
- * the user if they haven't logged a weigh-in in the last 7 days — skips silently if they're
+ * the user if they haven't logged a weigh-in in the last 7 days, skips silently if they're
  * already up to date, so it never nags on a week they've already checked in.
  */
 class WeightReminderWorker(
@@ -58,7 +58,7 @@ class WeightReminderWorker(
         val notification = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification)
             .setContentTitle("Time to check in!")
-            .setContentText("It's been a week — update your weight in FitnessKitchen.")
+            .setContentText("It's been a week, update your weight in FitnessKitchen.")
             .setAutoCancel(true)
             .setContentIntent(pendingIntent)
             .build()

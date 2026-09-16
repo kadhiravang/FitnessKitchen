@@ -87,13 +87,13 @@ fun AppNavHost(
     Scaffold(
         modifier = modifier,
         // Each screen owns a real TopAppBar (or, for Chat, its own statusBarsPadding) that
-        // already handles the status bar inset — without this, the outer Scaffold's default
+        // already handles the status bar inset, without this, the outer Scaffold's default
         // safeDrawing inset stacks on top of that and doubles the gap under the status bar.
         contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             val backStackEntry by navController.currentBackStackEntryAsState()
             val currentRoute = backStackEntry?.destination
-            // Onboarding is a full-bleed wizard, not a tab — no bottom nav while it's showing.
+            // Onboarding is a full-bleed wizard, not a tab, no bottom nav while it's showing.
             if (currentRoute?.route != Routes.ONBOARDING) {
                 NavigationBar {
                     bottomTabs.forEach { tab ->

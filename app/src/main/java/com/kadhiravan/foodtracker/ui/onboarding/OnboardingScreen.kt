@@ -45,7 +45,7 @@ import kotlinx.coroutines.launch
 
 private const val TOTAL_STEPS = 4
 
-/** First-launch setup wizard — collects the same profile fields the You/Settings tabs let
+/** First-launch setup wizard, collects the same profile fields the You/Settings tabs let
  * you edit later, so the app has real metadata (and a calculated calorie/macro target)
  * from the very first day instead of starting empty. Everything past the name is
  * skippable; anything already filled in is still saved when you skip. */
@@ -340,7 +340,7 @@ private fun ChatSetupStep(
 ) {
     Text("Chat assistant", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
     Text(
-        "Optional — powers the Chat tab's AI food logging. Skip this and add a key later in " +
+        "Optional, powers the Chat tab's AI food logging. Skip this and add a key later in " +
             "Settings if you'd rather; manual entry on the Diary tab always works without one.",
         style = MaterialTheme.typography.bodyMedium,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
@@ -358,7 +358,7 @@ private fun ChatSetupStep(
     when (chatProvider) {
         ChatProvider.GOOGLE -> {
             Text(
-                "Gemini — free tier, no billing needed. Get a free key at aistudio.google.com/apikey.",
+                "Gemini, free tier, no billing needed. Get a free key at aistudio.google.com/apikey.",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 14.dp, bottom = 10.dp)

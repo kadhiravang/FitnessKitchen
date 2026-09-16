@@ -81,7 +81,7 @@ fun UserScreen(securePrefs: SecurePrefs, weightRepository: WeightRepository, mod
 
     val weightHistory by weightRepository.observeAll().collectAsState(initial = emptyList())
 
-    // The same calorie goal the Diary tab will actually use — computed from the fields
+    // The same calorie goal the Diary tab will actually use, computed from the fields
     // currently on screen (not yet-saved securePrefs values) so the preview stays live
     // as you type, and validates the custom macro split against the real budget.
     val effectiveCalorieGoal = remember(weightHistory, age, heightCm, sex, activityLevel, nutritionGoal, calorieGoal) {
@@ -149,7 +149,7 @@ fun UserScreen(securePrefs: SecurePrefs, weightRepository: WeightRepository, mod
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Profile", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Optional — once age, height, and sex are set (plus a weigh-in on the Diary tab), your calorie and macro targets are calculated from those instead of the flat goal below.",
+                        "Optional, once age, height, and sex are set (plus a weigh-in on the Diary tab), your calorie and macro targets are calculated from those instead of the flat goal below.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
@@ -222,7 +222,7 @@ fun UserScreen(securePrefs: SecurePrefs, weightRepository: WeightRepository, mod
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Daily calorie goal", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Used only until your profile above is complete — after that, your calculated target takes over automatically.",
+                        "Used only until your profile above is complete, after that, your calculated target takes over automatically.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
@@ -236,7 +236,7 @@ fun UserScreen(securePrefs: SecurePrefs, weightRepository: WeightRepository, mod
                         modifier = Modifier.fillMaxWidth()
                     )
                     Text(
-                        "Optimal range — how far above or below your goal still counts as on target. Shown as two marker lines on the Diary gauge.",
+                        "Optimal range, how far above or below your goal still counts as on target. Shown as two marker lines on the Diary gauge.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 16.dp, bottom = 12.dp)
@@ -256,7 +256,7 @@ fun UserScreen(securePrefs: SecurePrefs, weightRepository: WeightRepository, mod
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Target weight", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Optional — powers the goal-progress card on the Diary tab (current weight, progress bar, time-to-goal estimate).",
+                        "Optional, powers the goal-progress card on the Diary tab (current weight, progress bar, time-to-goal estimate).",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
@@ -286,7 +286,7 @@ fun UserScreen(securePrefs: SecurePrefs, weightRepository: WeightRepository, mod
                         )
                     }
                     Text(
-                        "Override the calculated protein/carbs/fat split with your own numbers — must add up to no more than your calorie goal above.",
+                        "Override the calculated protein/carbs/fat split with your own numbers, must add up to no more than your calorie goal above.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
@@ -336,7 +336,7 @@ fun UserScreen(securePrefs: SecurePrefs, weightRepository: WeightRepository, mod
                         )
                         if (overLimit) {
                             Text(
-                                "Over your calorie goal — this won't be saved until it fits.",
+                                "Over your calorie goal, this won't be saved until it fits.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.error,
                                 modifier = Modifier.padding(top = 2.dp)

@@ -76,7 +76,7 @@ fun DiarySummaryCard(
 }
 
 /** Green within [buffer] kcal of the target, easing through amber and then red the further
- * off-target the count drifts — on-target eating should read as calm, not alarming, while a
+ * off-target the count drifts, on-target eating should read as calm, not alarming, while a
  * big miss should visibly stand out. */
 fun kcalGaugeColor(consumed: Int, goal: Int, buffer: Int, errorColor: Color): Color {
     if (goal <= 0) return ExerciseGreenVivid
@@ -88,19 +88,19 @@ fun kcalGaugeColor(consumed: Int, goal: Int, buffer: Int, errorColor: Color): Co
 }
 
 /** A horizontal track-and-fill bar with a status badge riding at the current position and
- * two tick marks bracketing the optimal range, styled after Fitia's calorie gauge — a flat
+ * two tick marks bracketing the optimal range, styled after Fitia's calorie gauge, a flat
  * bar reads at a glance in a way a dome-shaped arc never quite did. */
 @Composable
 private fun KcalGauge(consumed: Int, goal: Int, buffer: Int, modifier: Modifier = Modifier) {
     val trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.35f)
     val progressColor = kcalGaugeColor(consumed, goal, buffer, MaterialTheme.colorScheme.error)
     val tickColor = MaterialTheme.colorScheme.onSurfaceVariant
-    // Scaled against a fixed reference ceiling — comfortably above nearly any real calorie
-    // goal — rather than a multiple of goal itself, so the badge's position genuinely
+    // Scaled against a fixed reference ceiling, comfortably above nearly any real calorie
+    // goal, rather than a multiple of goal itself, so the badge's position genuinely
     // reflects the goal's value instead of always landing at the same fraction of the bar.
     val scale = maxOf(consumed.toFloat(), goal.toFloat(), 3000f) * 1.1f
     val fillFraction = if (goal > 0) (consumed / scale).coerceIn(0f, 1f) else 0f
-    // Two ticks — the optimal-eating range around the goal — instead of one, so hitting
+    // Two ticks, the optimal-eating range around the goal, instead of one, so hitting
     // anywhere between them reads as "on target" rather than implying one exact number. A
     // small buffer puts the true goal±buffer positions too close together to read as two
     // distinct ticks, so there's a minimum gap between them; the numbers shown under each

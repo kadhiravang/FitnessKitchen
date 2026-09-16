@@ -8,7 +8,7 @@ import kotlin.math.sqrt
 
 /**
  * Captures raw mono 16kHz PCM16 audio (the format Whisper expects) straight from the
- * mic — no silence-based segmentation, no restarts, purely "record until [stopAndGetWav]
+ * mic, no silence-based segmentation, no restarts, purely "record until [stopAndGetWav]
  * is called." Used for the local-Whisper-server path, where a complete recording is
  * uploaded once rather than streamed segment-by-segment like [SpeechRecognizerController].
  */

@@ -40,7 +40,7 @@ import com.kadhiravan.foodtracker.data.local.ProgressPhoto
 import com.kadhiravan.foodtracker.util.DateUtils
 import java.io.File
 
-/** A weekly-ish visual check-in, separate from the scale — one photo per day, shown for
+/** A weekly-ish visual check-in, separate from the scale, one photo per day, shown for
  * whichever date the Diary tab currently has selected. Tapping the photo opens a
  * scrollable gallery of every day's photo. */
 @Composable
@@ -77,7 +77,7 @@ fun ProgressPhotoCard(
 
             if (photo == null) {
                 Text(
-                    "No photo for this day yet — a weekly one alongside your weigh-ins helps you see changes numbers miss.",
+                    "No photo for this day yet, a weekly one alongside your weigh-ins helps you see changes numbers miss.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 10.dp)

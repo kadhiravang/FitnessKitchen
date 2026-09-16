@@ -4,7 +4,7 @@ import com.kadhiravan.foodtracker.data.local.FoodItem
 
 /**
  * Deterministic fuzzy matching of a chat-parsed food name against the user's own food
- * catalog — used so a dish logged before gets its exact stored calories/macros reused
+ * catalog, used so a dish logged before gets its exact stored calories/macros reused
  * instead of trusting the model to both recognize the match *and* re-estimate numbers for
  * it consistently every time. The model is still what identifies the food/quantity from
  * free text; this only replaces its guess at the nutrition numbers once app code confirms
@@ -32,7 +32,7 @@ object FoodMatcher {
     }
 
     /** True when two unit strings almost certainly mean the same thing (both "serving",
-     * both "g", "piece" vs "pieces", etc.) — scaling a matched food's per-serving numbers
+     * both "g", "piece" vs "pieces", etc.), scaling a matched food's per-serving numbers
      * by raw quantity only makes sense when the units actually line up. */
     fun unitsCompatible(a: String, b: String): Boolean {
         val na = normalizeUnit(a)
@@ -47,7 +47,7 @@ object FoodMatcher {
         s.lowercase().trim().replace(Regex("[^a-z0-9\\s]"), "").replace(Regex("\\s+"), " ")
 
     /** Blends word-overlap (robust to extra/missing descriptor words) with character-level
-     * edit distance (robust to minor spelling/transliteration differences) — food names are
+     * edit distance (robust to minor spelling/transliteration differences), food names are
      * short enough that either signal alone gives too many false positives or negatives. */
     private fun similarity(a: String, b: String): Double {
         if (a == b) return 1.0

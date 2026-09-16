@@ -29,7 +29,7 @@ class ChatRepository(
     private val logRepository: LogRepository,
     private val securePrefs: SecurePrefs
 ) {
-    /** Chat is scoped per day (like the Diary) — a long-running single thread was diluting
+    /** Chat is scoped per day (like the Diary), a long-running single thread was diluting
      * the model's context with days-old, unrelated messages. */
     fun observeMessages(date: String): Flow<List<ChatMessage>> = chatMessageDao.observeForDate(date)
 
@@ -57,7 +57,7 @@ class ChatRepository(
                 usdaApiKey = securePrefs.usdaApiKey
             )
         } catch (e: CancellationException) {
-            // The user cancelled the send — their message stays in the thread, but we
+            // The user cancelled the send, their message stays in the thread, but we
             // don't want a "⚠️ cancelled" bubble; just stop, no assistant reply.
             throw e
         } catch (e: Exception) {
@@ -66,7 +66,7 @@ class ChatRepository(
 
         val card = LogCardParser.parse(replyContent)
         // The model decides for itself whether an item "matches" something in the known-foods
-        // list it was shown, then re-estimates calories/macros either way — so the same dish
+        // list it was shown, then re-estimates calories/macros either way, so the same dish
         // worded slightly differently can silently get a different number each time. Redoing
         // the match deterministically here and overwriting with the catalog's own stored
         // values (only when the units actually line up) makes repeat dishes consistent
@@ -144,7 +144,7 @@ class ChatRepository(
             )
         }
 
-        // Splice any edits made in the card UI back into the stored content — otherwise the
+        // Splice any edits made in the card UI back into the stored content, otherwise the
         // CONFIRMED chip re-parses the original, unedited fence and shows the AI's initial
         // estimate instead of what was actually logged.
         val updatedContent = LogCardParser.withUpdatedFence(message.content, mealGroups)

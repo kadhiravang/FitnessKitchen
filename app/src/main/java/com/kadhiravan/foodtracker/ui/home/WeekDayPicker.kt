@@ -29,7 +29,7 @@ import com.kadhiravan.foodtracker.data.local.DailyTotal
 import com.kadhiravan.foodtracker.util.DateUtils
 
 /**
- * A week-dot day picker with prev/next paging — each column shows its own weekday letter and
+ * A week-dot day picker with prev/next paging, each column shows its own weekday letter and
  * day-of-month number (no separate "Sep 13 – Sep 19" range label, which read as a date range
  * to tap rather than a description of the row below it), so the date is unambiguous at a
  * glance. Today gets its own ring around the number, independent of whether it's the day
@@ -49,7 +49,7 @@ fun WeekDayPicker(
 ) {
     val today = DateUtils.today()
     Column(modifier = modifier.fillMaxWidth()) {
-        // The week's own first day (always its Sunday) tells us which month to label —
+        // The week's own first day (always its Sunday) tells us which month to label , 
         // simpler than tracking a separate month state, and right even for a week that
         // starts in one month and ends in the next.
         days.firstOrNull()?.let { firstDay ->

@@ -172,7 +172,7 @@ fun HomeScreen(
             if (nonEmptyMeals.isEmpty()) {
                 item {
                     Text(
-                        "Nothing logged yet — head to Chat and tell me what you ate, or tap + to add it yourself.",
+                        "Nothing logged yet, head to Chat and tell me what you ate, or tap + to add it yourself.",
                         style = MaterialTheme.typography.bodyLarge,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 20.dp, bottom = 24.dp)

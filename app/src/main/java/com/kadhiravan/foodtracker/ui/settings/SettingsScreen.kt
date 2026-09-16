@@ -116,7 +116,7 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Chat model", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Which AI powers the Chat tab's nutrition conversation. Both need their own API key below — stored encrypted on this device only.",
+                        "Which AI powers the Chat tab's nutrition conversation. Both need their own API key below, stored encrypted on this device only.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
@@ -137,7 +137,7 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                     when (chatProvider) {
                         ChatProvider.GOOGLE -> {
                             Text(
-                                "Gemini 2.5 Flash — free tier, no billing needed. Get a free key at aistudio.google.com/apikey.",
+                                "Gemini 2.5 Flash, free tier, no billing needed. Get a free key at aistudio.google.com/apikey.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(top = 14.dp, bottom = 10.dp)
@@ -151,7 +151,7 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Text(
-                                "Optional — a USDA FoodData Central key lets Gemini look up real " +
+                                "Optional, a USDA FoodData Central key lets Gemini look up real " +
                                     "nutrition facts for unfamiliar foods instead of guessing from " +
                                     "memory. Free at fdc.nal.usda.gov/api-key-signup.",
                                 style = MaterialTheme.typography.bodySmall,
@@ -191,7 +191,7 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Voice recognition language", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "On Android 14+, the mic already auto-switches between English and Tamil mid-sentence — this sets which one it defaults to.",
+                        "On Android 14+, the mic already auto-switches between English and Tamil mid-sentence, this sets which one it defaults to.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
@@ -215,7 +215,7 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Voice transcription (Whisper)", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Optional — for much higher-accuracy transcription than the on-device mic. Run the Whisper server on your own laptop (see whisper-server/ setup), or use OpenAI's hosted API instead if you don't want to run anything locally. The app falls back to the on-device recognizer automatically if neither is reachable.",
+                        "Optional, for much higher-accuracy transcription than the on-device mic. Run the Whisper server on your own laptop (see whisper-server/ setup), or use OpenAI's hosted API instead if you don't want to run anything locally. The app falls back to the on-device recognizer automatically if neither is reachable.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
@@ -247,7 +247,7 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                                 modifier = Modifier.fillMaxWidth()
                             )
                             Text(
-                                "Needs an OpenAI account with billing set up — Whisper isn't on the free tier. Get a key at platform.openai.com/api-keys.",
+                                "Needs an OpenAI account with billing set up, Whisper isn't on the free tier. Get a key at platform.openai.com/api-keys.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(top = 8.dp)
@@ -271,7 +271,7 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Backup & Restore", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Save everything — meals, chat history, weigh-ins, and your profile — to a zip file you keep, and restore it later or on a new device. The file includes your API keys, so keep it somewhere private.",
+                        "Save everything, meals, chat history, weigh-ins, and your profile, to a zip file you keep, and restore it later or on a new device. The file includes your API keys, so keep it somewhere private.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
@@ -291,7 +291,7 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                         )
                     }
                     Text(
-                        "Off keeps the backup small by skipping photo files — everything else is still included.",
+                        "Off keeps the backup small by skipping photo files, everything else is still included.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, bottom = 16.dp)
@@ -385,7 +385,7 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
         AlertDialog(
             onDismissRequest = { showRestoreConfirm = null },
             title = { Text("Restore this backup?") },
-            text = { Text("This replaces all current data on this device — meals, chat history, weigh-ins, photos, and settings. This can't be undone.") },
+            text = { Text("This replaces all current data on this device, meals, chat history, weigh-ins, photos, and settings. This can't be undone.") },
             confirmButton = {
                 TextButton(onClick = {
                     val uri = pendingRestoreUri

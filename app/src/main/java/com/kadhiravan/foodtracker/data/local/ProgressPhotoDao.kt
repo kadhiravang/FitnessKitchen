@@ -18,7 +18,7 @@ interface ProgressPhotoDao {
     @Query("DELETE FROM progress_photos")
     suspend fun deleteAll()
 
-    /** Replaces any existing photo for the same date — one progress photo per day. */
+    /** Replaces any existing photo for the same date, one progress photo per day. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(photo: ProgressPhoto)
 

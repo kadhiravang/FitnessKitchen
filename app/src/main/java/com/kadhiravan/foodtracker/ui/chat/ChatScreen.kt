@@ -151,7 +151,7 @@ fun ChatScreen(viewModel: ChatViewModel, securePrefs: SecurePrefs, modifier: Mod
                         whisperClient.transcribe(securePrefs.whisperServerUrl, wav)
                     }
                 } catch (e: Exception) {
-                    // Best-effort — the server was reachable moments ago but the actual
+                    // Best-effort, the server was reachable moments ago but the actual
                     // transcription call failed; nothing more useful to do than drop it.
                 } finally {
                     isTranscribing = false
@@ -407,7 +407,7 @@ private fun EmptyState() {
             style = MaterialTheme.typography.headlineSmall
         )
         Text(
-            "Type or tap the mic — e.g. \"two idlis and a dosa with sambar\"",
+            "Type or tap the mic, e.g. \"two idlis and a dosa with sambar\"",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(top = 8.dp)

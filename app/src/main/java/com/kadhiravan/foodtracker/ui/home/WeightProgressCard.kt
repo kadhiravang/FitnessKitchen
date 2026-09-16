@@ -45,7 +45,7 @@ import kotlin.math.abs
 import kotlin.math.roundToInt
 
 /** Progress toward a target body weight, derived from [WeightEntry] history and the
- * target set in Settings — mirrors the "Goal" card pattern from Fitia's Progress tab. */
+ * target set in Settings, mirrors the "Goal" card pattern from Fitia's Progress tab. */
 data class WeightGoalState(
     val label: String,
     val emoji: String,
@@ -129,7 +129,7 @@ fun WeightProgressCard(
                 ) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
                         Text("${formatKg(goal.currentWeight)} kg", style = MaterialTheme.typography.titleLarge)
-                        // Only one weigh-in so far means "change so far" is trivially zero —
+                        // Only one weigh-in so far means "change so far" is trivially zero , 
                         // showing that as a delta reads like a broken range ("68.5 kg → 0 kg")
                         // rather than "no change yet", so it's hidden until there's a second
                         // entry to actually compare against.
@@ -181,7 +181,7 @@ fun WeightProgressCard(
                 }
                 if (latest == null) {
                     Text(
-                        "No weigh-ins yet — tap Update to log your first one.",
+                        "No weigh-ins yet, tap Update to log your first one.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 10.dp)

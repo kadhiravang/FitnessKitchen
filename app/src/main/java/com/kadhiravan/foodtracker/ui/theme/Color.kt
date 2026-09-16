@@ -2,7 +2,7 @@ package com.kadhiravan.foodtracker.ui.theme
 
 import androidx.compose.ui.graphics.Color
 
-// Brand — inspired by Apple's Activity Rings (Move/Exercise/Stand): three fixed, fully
+// Brand, inspired by Apple's Activity Rings (Move/Exercise/Stand): three fixed, fully
 // saturated hues carry all the color, everything else in the app stays neutral. Each has a
 // deeper "Ink" variant for light-theme text/containers (the raw vivid tone is reserved for
 // filled bars and rings) and a brighter "Vivid" variant for dark theme, where it's meant to
@@ -16,10 +16,10 @@ val StandCyanInk = Color(0xFF0FA89D)
 val StandCyanVivid = Color(0xFF1EE6DA)
 
 // Warning midpoint for the kcal gauge's on-target -> off-target gradient (see
-// kcalGaugeColor in DiarySummary.kt) — an amber stop between "good" green and "alarm" red.
+// kcalGaugeColor in DiarySummary.kt), an amber stop between "good" green and "alarm" red.
 val AmberWarn = Color(0xFFFFC145)
 
-// Light theme — deliberately neutral (not tinted toward any brand hue) so the three ring
+// Light theme, deliberately neutral (not tinted toward any brand hue) so the three ring
 // colors read as the only saturated things on screen, same as Apple's own black/white chrome.
 val Paper = Color(0xFFF7F7F8)
 val PaperSurface = Color(0xFFEFEFF1)
@@ -29,7 +29,7 @@ val TextPrimaryLight = Color(0xFF17171A)
 val TextMutedLight = Color(0xFF79797F)
 val ErrorLight = Color(0xFFFF3B30)
 
-// Dark theme — near-true black, echoing Activity Rings' own rule of always sitting on a
+// Dark theme, near-true black, echoing Activity Rings' own rule of always sitting on a
 // black background, with a divider bright enough against the card to stay visible.
 val Ink = Color(0xFF0A0A0C)
 val InkSurface = Color(0xFF212124)

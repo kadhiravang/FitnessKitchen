@@ -5,7 +5,7 @@ import java.util.UUID
 
 /**
  * Text-field-backed mirror of [ParsedFoodItem] for in-progress editing before it's saved.
- * Macros ride along from the AI's estimate but aren't individually editable here — only
+ * Macros ride along from the AI's estimate but aren't individually editable here, only
  * name/quantity/unit/calories are, to keep the quick-confirm card from getting cluttered.
  */
 data class EditableFoodEntry(

@@ -73,7 +73,7 @@ private val AppShapes = Shapes(
 )
 
 /**
- * Dynamic (wallpaper-derived) color is opt-in, not the default — FitnessKitchen has its own
+ * Dynamic (wallpaper-derived) color is opt-in, not the default, FitnessKitchen has its own
  * designed identity (Move-red/Exercise-green/Stand-cyan on a neutral ground, styled after
  * Apple's Activity Rings) that Material You would otherwise wash out on Android 12+.
  */

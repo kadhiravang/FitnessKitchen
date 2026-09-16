@@ -19,7 +19,7 @@ data class LogCard(
  * re-rendering historical messages loaded from Room.
  *
  * The fence always wraps a single JSON object holding a "meals" array (even when
- * logging just one meal) — this lets one message log an entire day (breakfast,
+ * logging just one meal), this lets one message log an entire day (breakfast,
  * lunch, dinner...) as a single card instead of the model emitting multiple
  * concatenated JSON objects in one fence, which isn't valid JSON and used to
  * silently fail to parse.
@@ -55,7 +55,7 @@ object LogCardParser {
 
     /** Rebuilds a message's ```log fence from what was actually confirmed (after any edits
      * made in the card UI) and splices it back into the stored content, so a re-render of
-     * the CONFIRMED chip reflects the edited totals instead of the AI's original estimate —
+     * the CONFIRMED chip reflects the edited totals instead of the AI's original estimate , 
      * see ChatRepository.confirmCard. */
     fun withUpdatedFence(content: String, meals: List<Pair<MealType, List<ParsedFoodItem>>>): String {
         val payload = LogCardPayload(meals.map { (mealType, items) -> MealGroupPayload(mealType.name, items) })

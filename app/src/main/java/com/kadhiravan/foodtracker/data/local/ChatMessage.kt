@@ -21,7 +21,7 @@ data class ChatMessage(
     @PrimaryKey(autoGenerate = true) val id: Long = 0,
     val role: String,
     val content: String,
-    /** Local calendar date this message belongs to, formatted yyyy-MM-dd — the chat is scoped per day, like the Diary. */
+    /** Local calendar date this message belongs to, formatted yyyy-MM-dd, the chat is scoped per day, like the Diary. */
     val chatDate: String,
     val timestamp: Long = System.currentTimeMillis(),
     val cardStatus: String? = null

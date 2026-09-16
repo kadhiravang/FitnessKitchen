@@ -13,11 +13,11 @@ import java.util.concurrent.TimeUnit
 
 /**
  * Falls back to DNS-over-HTTPS resolvers (Cloudflare, then Google) when the system
- * resolver fails or hangs — covers both a brief handoff-window DNS hiccup and longer,
+ * resolver fails or hangs, covers both a brief handoff-window DNS hiccup and longer,
  * more stubborn resolver outages that would otherwise hang for minutes with no bound,
  * since [Dns.lookup] is a blocking call with no timeout of its own. Each layer gets a
  * short, hard timeout so a bad resolver fails fast instead of stalling the whole request.
- * Shared by every chat API client — the failure mode isn't provider-specific.
+ * Shared by every chat API client, the failure mode isn't provider-specific.
  */
 internal class ResilientDns(bootstrapClient: OkHttpClient) : Dns {
     private val cloudflare = DnsOverHttps.Builder()

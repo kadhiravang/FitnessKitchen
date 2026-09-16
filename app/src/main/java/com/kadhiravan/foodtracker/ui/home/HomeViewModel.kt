@@ -97,7 +97,7 @@ class HomeViewModel(
     private val weekOffset = MutableStateFlow(0)
 
     /** Sun-Sat week for the current [weekOffset], gap-filled so days with no entries show as
-     * zero — powers the week-dot day picker at the top of the Diary tab. Offset 0 is the
+     * zero, powers the week-dot day picker at the top of the Diary tab. Offset 0 is the
      * week containing today; negative/positive page backward/forward through other weeks. */
     val weeklyTrend: StateFlow<List<DailyTotal>> = weekOffset
         .flatMapLatest { offset ->
@@ -123,7 +123,7 @@ class HomeViewModel(
 
     fun selectDate(date: String) {
         selectedDate.value = date
-        // Keep the week picker's visible week in sync — jumping here from the History
+        // Keep the week picker's visible week in sync, jumping here from the History
         // calendar (or anywhere else) used to leave the old week on screen, with no dot
         // highlighted for the day you actually landed on.
         weekOffset.value = DateUtils.daysBetween(DateUtils.startOfWeek(DateUtils.today()), DateUtils.startOfWeek(date)) / 7
@@ -137,7 +137,7 @@ class HomeViewModel(
         viewModelScope.launch { logRepository.update(entry) }
     }
 
-    /** Direct add, bypassing the Chat tab's AI parsing entirely — a fallback for when the
+    /** Direct add, bypassing the Chat tab's AI parsing entirely, a fallback for when the
      * chat model's rate limit is exhausted (or you just don't want to type it out). */
     fun addManualEntry(
         name: String,
@@ -173,7 +173,7 @@ class HomeViewModel(
     val progressPhotos: StateFlow<List<ProgressPhoto>> = progressPhotoRepository.observeAll()
         .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
-    /** The one photo (if any) belonging to the currently selected Diary date — a progress
+    /** The one photo (if any) belonging to the currently selected Diary date, a progress
      * photo is a per-day thing, so the Diary card should reflect the day being viewed
      * instead of always showing whichever photo is most recent overall. */
     val selectedDayPhoto: StateFlow<ProgressPhoto?> = combine(

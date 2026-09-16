@@ -15,7 +15,7 @@ object DateUtils {
     private val dayOfMonthFormat = SimpleDateFormat("d", Locale.US)
     private val monthYearFormat = SimpleDateFormat("MMMM yyyy", Locale.US)
 
-    // Material3's DatePicker works in UTC epoch millis regardless of device timezone —
+    // Material3's DatePicker works in UTC epoch millis regardless of device timezone , 
     // this pair converts to/from that without touching [isoFormat] (used for "today", which
     // must stay in the device's local timezone).
     private val isoFormatUtc = SimpleDateFormat("yyyy-MM-dd", Locale.US).apply {
@@ -58,7 +58,7 @@ object DateUtils {
 
     fun offsetFromToday(days: Int): String = offsetDate(today(), days)
 
-    /** Shifts any yyyy-MM-dd date by [days] (negative for earlier) — the general form
+    /** Shifts any yyyy-MM-dd date by [days] (negative for earlier), the general form
      * [offsetFromToday] is built on, useful for day-navigation from an arbitrary date. */
     fun offsetDate(iso: String, days: Int): String {
         val cal = Calendar.getInstance()
@@ -68,7 +68,7 @@ object DateUtils {
     }
 
     /** Consecutive-day logging streak ending today. If today has no entry yet, the streak
-     * counts from yesterday instead — the streak isn't broken until the day fully ends,
+     * counts from yesterday instead, the streak isn't broken until the day fully ends,
      * so it stays accurate for someone who hasn't logged yet today. */
     fun computeStreak(loggedDates: List<String>): Int {
         val dates = loggedDates.toHashSet()
@@ -118,14 +118,14 @@ object DateUtils {
         return cal.getActualMaximum(Calendar.DAY_OF_MONTH)
     }
 
-    /** 0 (Sunday) through 6 (Saturday) — used to pad a calendar grid's leading blanks. */
+    /** 0 (Sunday) through 6 (Saturday), used to pad a calendar grid's leading blanks. */
     fun dayOfWeekIndex(iso: String): Int {
         val cal = Calendar.getInstance()
         cal.time = try { isoFormat.parse(iso)!! } catch (e: Exception) { Date() }
         return cal.get(Calendar.DAY_OF_WEEK) - 1
     }
 
-    /** The Sunday on or before [iso] — the start of that week, matching the Sun-first grid
+    /** The Sunday on or before [iso], the start of that week, matching the Sun-first grid
      * [dayOfWeekIndex] already assumes for the History calendar. */
     fun startOfWeek(iso: String): String = offsetDate(iso, -dayOfWeekIndex(iso))
 

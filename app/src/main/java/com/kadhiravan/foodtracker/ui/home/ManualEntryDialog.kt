@@ -28,7 +28,7 @@ import com.kadhiravan.foodtracker.data.local.MealType
 import com.kadhiravan.foodtracker.ui.components.displayName
 import com.kadhiravan.foodtracker.util.DateUtils
 
-/** Quick-add a single food entry directly, no AI involved — for when the chat model's
+/** Quick-add a single food entry directly, no AI involved, for when the chat model's
  * rate limit is exhausted or you just want to type a number in yourself. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

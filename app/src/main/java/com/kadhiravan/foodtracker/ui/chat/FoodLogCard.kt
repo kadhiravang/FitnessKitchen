@@ -38,7 +38,7 @@ import com.kadhiravan.foodtracker.ui.components.displayName
 import com.kadhiravan.foodtracker.ui.components.toEditable
 import java.util.UUID
 
-/** One editable meal group within a [LogCard] — a card may cover several meals at
+/** One editable meal group within a [LogCard], a card may cover several meals at
  * once (e.g. logging a whole day in one message), each independently editable. */
 data class EditableMealGroup(
     val localId: String = UUID.randomUUID().toString(),
@@ -61,7 +61,7 @@ fun FoodLogCard(
             val mealNames = card.meals.joinToString(", ") { it.mealType.displayName() }
             ResolvedCard(
                 icon = Icons.Default.Check,
-                label = "Logged — $totalKcal kcal to $mealNames",
+                label = "Logged, $totalKcal kcal to $mealNames",
                 tint = MaterialTheme.colorScheme.primary,
                 modifier = modifier
             )

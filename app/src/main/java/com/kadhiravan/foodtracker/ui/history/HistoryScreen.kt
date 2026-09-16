@@ -214,8 +214,8 @@ private fun CalendarCard(
                         ) {
                             if (day != null) {
                                 val isToday = day.date == today
-                                // Same color scale as the Diary gauge — green/amber/red by how
-                                // close the day landed to the calorie goal — so the calendar
+                                // Same color scale as the Diary gauge, green/amber/red by how
+                                // close the day landed to the calorie goal, so the calendar
                                 // reads at a glance as a consistency tracker, not just an
                                 // "did I log anything" checklist.
                                 val dayColor = if (day.hasData) {

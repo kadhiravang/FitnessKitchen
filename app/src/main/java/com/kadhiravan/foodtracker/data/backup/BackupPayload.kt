@@ -9,7 +9,7 @@ import kotlinx.serialization.Serializable
 /** Mirrors [com.kadhiravan.foodtracker.data.local.ProgressPhoto], but with the
  * device-specific absolute [com.kadhiravan.foodtracker.data.local.ProgressPhoto.filePath]
  * replaced by a portable filename (the actual bytes live alongside `backup.json` in the
- * zip, under `photos/progress/`) — `fileName` is null when photos weren't included in
+ * zip, under `photos/progress/`), `fileName` is null when photos weren't included in
  * this backup. */
 @Serializable
 data class ProgressPhotoBackup(
@@ -21,7 +21,7 @@ data class ProgressPhotoBackup(
 /** Every [com.kadhiravan.foodtracker.data.prefs.SecurePrefs] field worth restoring.
  * Enum fields are stored as their [Enum.name], matching how SecurePrefs itself persists
  * them, so no separate enum serialization support is needed. [profilePicFileName] is the
- * same portable-filename trick as [ProgressPhotoBackup.fileName] — the actual bytes live
+ * same portable-filename trick as [ProgressPhotoBackup.fileName], the actual bytes live
  * under `photos/profile/` in the zip. */
 @Serializable
 data class SecurePrefsBackup(
@@ -50,7 +50,7 @@ data class SecurePrefsBackup(
     val backupIncludePhotos: Boolean
 )
 
-/** The whole exported state, serialized to `backup.json` at the root of the backup zip —
+/** The whole exported state, serialized to `backup.json` at the root of the backup zip , 
  * see BackupManager for how this is built and consumed. */
 @Serializable
 data class BackupPayload(

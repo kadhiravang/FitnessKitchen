@@ -21,10 +21,10 @@ import java.util.zip.ZipOutputStream
 
 /**
  * Exports every table plus the user's settings into a single zip the user picks a
- * destination for (Storage Access Framework — no storage permission needed), and restores
+ * destination for (Storage Access Framework, no storage permission needed), and restores
  * one back, including onto a fresh install on another device. `ProgressPhoto.filePath` and
  * `SecurePrefs.profilePicPath` are absolute, device-specific paths, so the zip never stores
- * them directly — only a portable filename, resolved back to a real path against whichever
+ * them directly, only a portable filename, resolved back to a real path against whichever
  * device's `filesDir` is doing the restoring.
  */
 class BackupManager(

@@ -43,7 +43,7 @@ import com.kadhiravan.foodtracker.data.local.ProgressPhoto
 import com.kadhiravan.foodtracker.util.DateUtils
 import java.io.File
 
-/** Full-page, scroll-by-date view of every progress photo — the "open it up and scroll
+/** Full-page, scroll-by-date view of every progress photo, the "open it up and scroll
  * through your history" surface the compact Diary card doesn't have room for. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

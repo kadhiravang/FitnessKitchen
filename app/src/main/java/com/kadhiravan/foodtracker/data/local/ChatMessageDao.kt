@@ -29,7 +29,7 @@ interface ChatMessageDao {
     suspend fun updateCardStatus(id: Long, status: String)
 
     /** Used on confirm, alongside marking the card CONFIRMED, to splice any edits made in
-     * the card UI back into the stored content — see ChatRepository.confirmCard. */
+     * the card UI back into the stored content, see ChatRepository.confirmCard. */
     @Query("UPDATE chat_messages SET content = :content, cardStatus = :status WHERE id = :id")
     suspend fun updateContentAndStatus(id: Long, content: String, status: String)
 }

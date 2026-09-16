@@ -28,7 +28,7 @@ class NvidiaApiException(message: String) : IOException(message)
  * Talks to NVIDIA's OpenAI-compatible chat completions endpoint to hold a running
  * conversation about what the user ate. The assistant either asks a clarifying
  * question (plain text) or, once confident, replies with a short line plus a
- * fenced ```log block that [LogCardParser] turns into a confirmable food card —
+ * fenced ```log block that [LogCardParser] turns into a confirmable food card , 
  * grounded against the user's own food catalog so known dishes get accurate
  * calories instead of guesses.
  */
@@ -42,7 +42,7 @@ class NvidiaApiClient : ChatApiClient {
 
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
-        // Generous — a growing chat history means a bigger prompt each turn, and this
+        // Generous, a growing chat history means a bigger prompt each turn, and this
         // model can take a while to respond under load. 45s was too tight in practice.
         .readTimeout(120, TimeUnit.SECONDS)
         .dns(ResilientDns(bootstrapClient))
@@ -70,19 +70,19 @@ class NvidiaApiClient : ChatApiClient {
 
             Rules:
             - The user may write or speak in English, Tamil (Tamil script or transliterated),
-              or a mix of both — food names are often native Tamil words. Understand them
+              or a mix of both, food names are often native Tamil words. Understand them
               directly and always reply in English.
             - If the user's message isn't about food, just reply naturally and briefly.
             - The user usually does NOT know exact quantities, ingredients, or calorie counts
-              themselves — that's why they're asking you. NEVER leave them without a number,
+              themselves, that's why they're asking you. NEVER leave them without a number,
               and almost never ask a clarifying question. Instead, always make your own
               reasonable best-effort estimate using typical Indian home-cooking assumptions
               (average serving size, common recipe proportions, usual oil/ghee content) and
-              log it immediately — you can briefly state the assumption you made in your
+              log it immediately, you can briefly state the assumption you made in your
               reply (e.g. "assuming a medium bowl, ~250ml") so they can correct it on the
               card afterward if it's off. Only ask a clarifying question in the rare case
               where you cannot identify the dish at all (e.g. an unfamiliar name with zero
-              context) — even then, still give your best guess estimate AND the log block in
+              context), even then, still give your best guess estimate AND the log block in
               that same reply rather than blocking on an answer.
             - Once you have an estimate (it matches a known food, or you've assumed reasonable
               defaults), reply with a short friendly line confirming what you understood, followed
@@ -90,9 +90,9 @@ class NvidiaApiClient : ChatApiClient {
               ```log
               {"meals":[{"mealType":"BREAKFAST","items":[{"name":"...","quantity":1,"unit":"piece","calories":120,"proteinG":4.5,"carbsG":18.0,"fatG":3.0,"matchedKnownFood":true}]}]}
               ```
-              This must always be valid JSON — a single top-level object with one "meals"
+              This must always be valid JSON, a single top-level object with one "meals"
               array. If the user describes several meals at once (e.g. logging a whole day),
-              put ALL of them as separate entries inside that same "meals" array — never emit
+              put ALL of them as separate entries inside that same "meals" array, never emit
               more than one ```log block, and never write two JSON objects back to back.
               mealType must be one of BREAKFAST, LUNCH, DINNER, SNACK (pick the most likely
               one based on context/time if not stated). "calories", "proteinG", "carbsG", and
@@ -100,8 +100,8 @@ class NvidiaApiClient : ChatApiClient {
               item matches a known food, scale its caloriesPerServing/proteinG/carbsG/fatG by
               quantity and set matchedKnownFood true; otherwise estimate all four realistically
               from your knowledge of Indian cuisine and set matchedKnownFood false.
-            - Keep every reply short — a couple of sentences at most, like a text message.
-            - You're told what the user has already eaten today below. Use it for context —
+            - Keep every reply short, a couple of sentences at most, like a text message.
+            - You're told what the user has already eaten today below. Use it for context , 
               e.g. if asked "what should I eat now" or "how am I doing today", answer using
               those real numbers instead of guessing. Offer a brief suggestion when it's
               naturally relevant (they're close to/over a typical daily calorie range, a meal
@@ -152,7 +152,7 @@ class NvidiaApiClient : ChatApiClient {
 
     /**
      * Runs the request, retrying with backoff on transient failures (network hiccups,
-     * rate limiting, or an overloaded upstream — 429/5xx/529) so a momentary blip doesn't
+     * rate limiting, or an overloaded upstream, 429/5xx/529) so a momentary blip doesn't
      * force the user to manually resend. Non-transient failures (bad key, bad request)
      * fail immediately.
      */
@@ -170,7 +170,7 @@ class NvidiaApiClient : ChatApiClient {
             val response = try {
                 executeCancellable(request)
             } catch (e: IOException) {
-                // Covers UnknownHostException too — a brief DNS hiccup (common right after
+                // Covers UnknownHostException too, a brief DNS hiccup (common right after
                 // a phone hands off between Wi-Fi and cellular) looks identical to this.
                 Log.d(TAG, "attempt $attempt failed after ${System.currentTimeMillis() - startMs}ms: ${e.javaClass.simpleName}: ${e.message}")
                 if (attempt >= maxAttempts) {
@@ -195,7 +195,7 @@ class NvidiaApiClient : ChatApiClient {
     private fun backoffMs(attempt: Int): Long = (1000L * (1L shl (attempt - 1))).coerceAtMost(8000L)
 
     /**
-     * Suspends until the call completes, but — unlike the blocking [Call.execute] — actually
+     * Suspends until the call completes, but unlike the blocking [Call.execute], it actually
      * aborts the in-flight HTTP call when the coroutine is cancelled (e.g. the user tapped
      * Cancel while a reply was hanging), instead of leaving it running unattended.
      */
@@ -231,7 +231,7 @@ private data class ChatCompletionRequest(
     val temperature: Double = 0.3,
     val max_tokens: Int = 1024,
     // This model defaults to an extended "thinking" reasoning pass unless told otherwise,
-    // which was both slow and — combined with a smaller max_tokens — could burn the whole
+    // which was both slow and, combined with a smaller max_tokens, could burn the whole
     // token budget on reasoning before ever emitting the actual reply/log block, leaving the
     // user with no calorie estimate at all. Disabled for a fast, direct answer every time.
     val chat_template_kwargs: ChatTemplateKwargs = ChatTemplateKwargs()

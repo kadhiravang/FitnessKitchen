@@ -20,7 +20,7 @@ interface WeightEntryDao {
     @Query("DELETE FROM weight_entries")
     suspend fun deleteAll()
 
-    /** Replaces any existing entry for the same date — one weigh-in per day. */
+    /** Replaces any existing entry for the same date, one weigh-in per day. */
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     suspend fun upsert(entry: WeightEntry)
 
