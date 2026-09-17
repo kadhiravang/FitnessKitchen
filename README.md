@@ -35,7 +35,7 @@ nutrition assistant, like talking to ChatGPT/Claude, type or speak naturally
 
 ## Try it without building anything
 
-Grab the latest APK from the [Releases page](https://github.com/kadhiravang/Foodtracker/releases)
+Grab the latest APK from the [Releases page](https://github.com/kadhiravang/FitnessKitchen/releases)
 and sideload it:
 
 1. On your Android phone: **Settings → About phone** → tap **Build number** 7
