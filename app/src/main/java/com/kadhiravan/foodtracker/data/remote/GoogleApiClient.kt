@@ -60,9 +60,10 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
         apiKey: String,
         knownFoods: List<FoodItem>,
         todaysLogSummary: String,
-        usdaApiKey: String
+        usdaApiKey: String,
+        geminiModel: String
     ): String = withContext(Dispatchers.IO) {
-        runConversation(history, newUserText, apiKey, knownFoods, todaysLogSummary, usdaApiKey)
+        runConversation(history, newUserText, apiKey, knownFoods, todaysLogSummary, usdaApiKey, geminiModel)
     }
 
     private suspend fun runConversation(
@@ -71,7 +72,8 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
         apiKey: String,
         knownFoods: List<FoodItem>,
         todaysLogSummary: String,
-        usdaApiKey: String
+        usdaApiKey: String,
+        geminiModel: String
     ): String {
         if (apiKey.isBlank()) {
             throw GoogleApiException("No Google Gemini API key set. Add one in Settings.")
@@ -179,7 +181,7 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
                 .toRequestBody("application/json".toMediaType())
 
             val request = Request.Builder()
-                .url("https://generativelanguage.googleapis.com/v1beta/models/$MODEL:generateContent?key=$apiKey")
+                .url("https://generativelanguage.googleapis.com/v1beta/models/${geminiModel.ifBlank { MODEL }}:generateContent?key=$apiKey")
                 .addHeader("Content-Type", "application/json")
                 .post(body)
                 .build()
@@ -275,13 +277,16 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
             val bodyText = response.use { it.body?.string().orEmpty() }
             if (response.isSuccessful) return bodyText
 
-            Log.d(TAG, "attempt $attempt got HTTP ${response.code} after ${System.currentTimeMillis() - startMs}ms")
+            Log.d(TAG, "attempt $attempt got HTTP ${response.code} after ${System.currentTimeMillis() - startMs}ms: $bodyText")
             val transient = response.code == 429 || response.code in 500..599
             if (transient && attempt < maxAttempts) {
                 delay(backoffMs(attempt))
                 continue
             }
-            throw GoogleApiException("Gemini API error ${response.code}: ${bodyText.take(300)}")
+            // Truncated to 300 chars used to cut this off before the "details" array,
+            // which is exactly where Google puts the quotaMetric/quotaId that says
+            // WHICH limit (per-minute vs per-day, which model) was actually hit.
+            throw GoogleApiException("Gemini API error ${response.code}: ${bodyText.take(2000)}")
         }
     }
 
@@ -311,9 +316,12 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
 
     private companion object {
         const val TAG = "GoogleApiClient"
-        // Free-tier model. gemini-2.5-flash was retired, the API itself now points
-        // callers to this replacement.
-        const val MODEL = "gemini-3.6-flash"
+        // Fallback if Settings hasn't set a model yet (fresh install, or the caller
+        // passed a blank string). Free-tier model; gemini-2.5-flash was retired, then
+        // gemini-3.6-flash's free-tier daily cap proved unusually low (~20 requests/day).
+        // A per-model Settings switch (see GeminiModel) lets the user hop to 3.7 or 3.6
+        // if 3.8 hits its own daily cap, since each model's quota is tracked separately.
+        const val MODEL = "gemini-3.8-flash"
         // Caps how many tool-call round TRIPS one message can trigger, not how many
         // lookups, since Gemini batches several functionCall parts into a single turn
         // when it can (e.g. every ingredient of a custom dish at once). This just stops a

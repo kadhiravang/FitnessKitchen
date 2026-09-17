@@ -15,6 +15,7 @@ interface ChatApiClient {
         apiKey: String,
         knownFoods: List<FoodItem>,
         todaysLogSummary: String,
-        usdaApiKey: String = ""
+        usdaApiKey: String = "",
+        geminiModel: String = ""
     ): String
 }

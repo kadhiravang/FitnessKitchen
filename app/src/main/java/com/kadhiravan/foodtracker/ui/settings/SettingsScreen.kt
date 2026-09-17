@@ -13,6 +13,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
@@ -45,6 +46,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import com.kadhiravan.foodtracker.data.backup.BackupManager
 import com.kadhiravan.foodtracker.data.prefs.ChatProvider
+import com.kadhiravan.foodtracker.data.prefs.GeminiModel
 import com.kadhiravan.foodtracker.data.prefs.SecurePrefs
 import com.kadhiravan.foodtracker.data.prefs.SpeechLanguage
 import com.kadhiravan.foodtracker.util.DateUtils
@@ -54,6 +56,7 @@ import kotlinx.coroutines.launch
 @Composable
 fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modifier: Modifier = Modifier) {
     var chatProvider by remember { mutableStateOf(securePrefs.chatProvider) }
+    var geminiModel by remember { mutableStateOf(securePrefs.geminiModel) }
     var geminiApiKey by remember { mutableStateOf(securePrefs.geminiApiKey) }
     var nvidiaApiKey by remember { mutableStateOf(securePrefs.nvidiaApiKey) }
     var usdaApiKey by remember { mutableStateOf(securePrefs.usdaApiKey) }
@@ -137,11 +140,28 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                     when (chatProvider) {
                         ChatProvider.GOOGLE -> {
                             Text(
-                                "Gemini 2.5 Flash, free tier, no billing needed. Get a free key at aistudio.google.com/apikey.",
+                                "Free tier, no billing needed. Get a free key at aistudio.google.com/apikey. Each model below has its own daily free quota, tracked separately, so if one runs out, switch to another and keep going.",
                                 style = MaterialTheme.typography.bodySmall,
                                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 modifier = Modifier.padding(top = 14.dp, bottom = 10.dp)
                             )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier
+                                    .horizontalScroll(rememberScrollState())
+                                    .padding(bottom = 14.dp)
+                            ) {
+                                GeminiModel.options.forEach { (id, label) ->
+                                    FilterChip(
+                                        selected = geminiModel == id,
+                                        onClick = {
+                                            geminiModel = id
+                                            securePrefs.geminiModel = id
+                                        },
+                                        label = { Text(label) }
+                                    )
+                                }
+                            }
                             OutlinedTextField(
                                 value = geminiApiKey,
                                 onValueChange = { geminiApiKey = it; saved = false },

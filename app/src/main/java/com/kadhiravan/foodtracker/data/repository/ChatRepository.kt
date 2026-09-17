@@ -54,7 +54,8 @@ class ChatRepository(
                 apiKey = apiKey,
                 knownFoods = knownFoods,
                 todaysLogSummary = buildLogSummary(logRepository.getForDate(date)),
-                usdaApiKey = securePrefs.usdaApiKey
+                usdaApiKey = securePrefs.usdaApiKey,
+                geminiModel = securePrefs.geminiModel
             )
         } catch (e: CancellationException) {
             // The user cancelled the send, their message stays in the thread, but we

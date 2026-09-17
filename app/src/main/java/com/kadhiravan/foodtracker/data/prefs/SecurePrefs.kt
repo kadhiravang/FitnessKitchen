@@ -81,6 +81,14 @@ class SecurePrefs(context: Context) {
         get() = ChatProvider.entries.find { it.name == prefs.getString(KEY_CHAT_PROVIDER, null) } ?: ChatProvider.GOOGLE
         set(value) = prefs.edit().putString(KEY_CHAT_PROVIDER, value.name).apply()
 
+    /** Which Gemini model id the Google provider calls, see [GeminiModel] — a manual
+     * escape hatch to a backup model when the default's free-tier daily quota runs out
+     * (each model's quota is tracked separately by Google, so switching immediately
+     * unblocks the chat rather than waiting for the exhausted one to reset). */
+    var geminiModel: String
+        get() = prefs.getString(KEY_GEMINI_MODEL, GeminiModel.DEFAULT) ?: GeminiModel.DEFAULT
+        set(value) = prefs.edit().putString(KEY_GEMINI_MODEL, value).apply()
+
     var dailyCalorieGoal: Int
         get() = prefs.getInt(KEY_DAILY_GOAL, 0)
         set(value) = prefs.edit().putInt(KEY_DAILY_GOAL, value).apply()
@@ -183,6 +191,7 @@ class SecurePrefs(context: Context) {
         private const val KEY_NVIDIA_API_KEY = "nvidia_api_key"
         private const val KEY_USDA_API_KEY = "usda_api_key"
         private const val KEY_CHAT_PROVIDER = "chat_provider"
+        private const val KEY_GEMINI_MODEL = "gemini_model"
         private const val KEY_DAILY_GOAL = "daily_calorie_goal"
         private const val KEY_CALORIE_BUFFER = "calorie_buffer_kcal"
         private const val KEY_TARGET_WEIGHT = "target_weight_kg"
@@ -206,6 +215,23 @@ class SecurePrefs(context: Context) {
 enum class ChatProvider(val displayName: String) {
     GOOGLE("Google Gemini"),
     NVIDIA("NVIDIA (deepseek)")
+}
+
+/** Gemini model ids the Google provider can call. 3.8 is the current GA default;
+ * 3.7 and 3.6 are kept selectable as manual backups, since Google tracks each
+ * model's free-tier daily quota separately, a model hitting its cap doesn't affect
+ * the others. */
+object GeminiModel {
+    const val FLASH_3_8 = "gemini-3.8-flash"
+    const val FLASH_3_7 = "gemini-3.7-flash"
+    const val FLASH_3_6 = "gemini-3.6-flash"
+    const val DEFAULT = FLASH_3_8
+
+    val options = listOf(
+        FLASH_3_8 to "3.8 Flash (default)",
+        FLASH_3_7 to "3.7 Flash (backup)",
+        FLASH_3_6 to "3.6 Flash (backup)"
+    )
 }
 
 enum class Sex(val displayName: String) {
