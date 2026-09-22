@@ -13,14 +13,17 @@ nutrition assistant, like talking to ChatGPT/Claude, type or speak naturally
   what went into it) instead of guessing from memory, then combines that with
   the quantity you described. A confirm card always appears before anything is
   logged, edit anything, then confirm or discard.
-- **Known-food matching**: once a food exists in your own catalog, a
-  deterministic matcher (`util/FoodMatcher.kt`) recognizes it by name and reuses
-  your stored values instead of asking the model again, so repeat logs of the
-  same dish stay numerically consistent.
+- **Fresh numbers every time**: no cached per-food override table, every logged
+  item (known dish or a custom recipe you recite ingredient-by-ingredient) gets
+  its calories/macros computed fresh from the model plus live USDA grounding on
+  that turn, so a corrupted or stale catalog entry can never silently flatten a
+  real result.
 - **Your food database**: seeded with ~25 common South Indian dishes (idli, dosa,
   sambar, chutneys, pongal, biryani, etc.) and fully editable, add anything you
   actually eat, edit quantity/calories on any past log entry and the rest
-  rescales automatically.
+  rescales automatically. Kept purely as informational context for the chat
+  model (what you've logged before), not as an authoritative source it's forced
+  to match against.
 - **Voice input**: on-device speech recognition by default (English/Tamil,
   auto-switching mid-sentence on Android 14+), or point it at a Whisper
   transcription server, either one you self-host, or OpenAI's hosted API , 
@@ -172,11 +175,11 @@ app/src/main/java/com/kadhiravan/foodtracker/
   data/local/          Room entities/DAOs (food catalog, log entries, chat messages, weight), seed data
   data/remote/         Gemini (function-calling + USDA grounding) and NVIDIA chat clients,
                         fenced-JSON log-card parser, USDA/Whisper HTTP clients
-  data/repository/     Thin repositories the ViewModels talk to; deterministic known-food
-                        override happens here (ChatRepository)
+  data/repository/     Thin repositories the ViewModels talk to; ChatRepository builds the
+                        goal/remaining-budget context sent to the model each turn
   data/prefs/          Encrypted storage for API keys + settings
   data/backup/         Zip export/import of the entire local database + settings
-  util/                FoodMatcher, name/unit similarity matching against your own catalog
+  util/                NutritionCalculator (BMR-based goal/macro targets), DateUtils
   ui/chat/             The main chat thread: bubbles, typing indicator, inline confirm card
   ui/home/             "Diary" tab, a day's log grouped by meal, quantity-edit dialog
   ui/voice/            Mic capture + Whisper WAV recording, used by Chat
