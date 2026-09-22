@@ -51,7 +51,7 @@ fun EditableFoodRow(
             ) {
                 OutlinedTextField(
                     value = entry.quantity,
-                    onValueChange = { onChange(entry.copy(quantity = it)) },
+                    onValueChange = { onChange(entry.withQuantity(it)) },
                     label = { Text("Qty") },
                     singleLine = true,
                     keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
