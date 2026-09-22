@@ -81,6 +81,8 @@ fun OnboardingScreen(
     var nvidiaApiKey by remember { mutableStateOf(securePrefs.nvidiaApiKey) }
     var ollamaServerUrl by remember { mutableStateOf(securePrefs.ollamaServerUrl) }
     var ollamaModel by remember { mutableStateOf(securePrefs.ollamaModel) }
+    var ollamaCloudApiKey by remember { mutableStateOf(securePrefs.ollamaCloudApiKey) }
+    var ollamaCloudModel by remember { mutableStateOf(securePrefs.ollamaCloudModel) }
     var claudeApiKey by remember { mutableStateOf(securePrefs.claudeApiKey) }
     var openaiApiKey by remember { mutableStateOf(securePrefs.openaiApiKey) }
     var openaiModel by remember { mutableStateOf(securePrefs.openaiModel) }
@@ -107,6 +109,8 @@ fun OnboardingScreen(
         securePrefs.nvidiaApiKey = nvidiaApiKey.trim()
         securePrefs.ollamaServerUrl = ollamaServerUrl.trim()
         securePrefs.ollamaModel = ollamaModel.trim()
+        securePrefs.ollamaCloudApiKey = ollamaCloudApiKey.trim()
+        securePrefs.ollamaCloudModel = ollamaCloudModel.trim()
         securePrefs.claudeApiKey = claudeApiKey.trim()
         securePrefs.openaiApiKey = openaiApiKey.trim()
         securePrefs.openaiModel = openaiModel.trim()
@@ -187,6 +191,8 @@ fun OnboardingScreen(
                         nvidiaApiKey = nvidiaApiKey, onNvidiaKeyChange = { nvidiaApiKey = it },
                         ollamaServerUrl = ollamaServerUrl, onOllamaServerUrlChange = { ollamaServerUrl = it },
                         ollamaModel = ollamaModel, onOllamaModelChange = { ollamaModel = it },
+                        ollamaCloudApiKey = ollamaCloudApiKey, onOllamaCloudKeyChange = { ollamaCloudApiKey = it },
+                        ollamaCloudModel = ollamaCloudModel, onOllamaCloudModelChange = { ollamaCloudModel = it },
                         claudeApiKey = claudeApiKey, onClaudeKeyChange = { claudeApiKey = it },
                         openaiApiKey = openaiApiKey, onOpenaiKeyChange = { openaiApiKey = it },
                         openaiModel = openaiModel, onOpenaiModelChange = { openaiModel = it }
@@ -354,6 +360,8 @@ private fun ChatSetupStep(
     nvidiaApiKey: String, onNvidiaKeyChange: (String) -> Unit,
     ollamaServerUrl: String, onOllamaServerUrlChange: (String) -> Unit,
     ollamaModel: String, onOllamaModelChange: (String) -> Unit,
+    ollamaCloudApiKey: String, onOllamaCloudKeyChange: (String) -> Unit,
+    ollamaCloudModel: String, onOllamaCloudModelChange: (String) -> Unit,
     claudeApiKey: String, onClaudeKeyChange: (String) -> Unit,
     openaiApiKey: String, onOpenaiKeyChange: (String) -> Unit,
     openaiModel: String, onOpenaiModelChange: (String) -> Unit
@@ -431,6 +439,30 @@ private fun ChatSetupStep(
                 onValueChange = onOllamaModelChange,
                 label = { Text("Model") },
                 placeholder = { Text("llama3.1") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
+            )
+        }
+        ChatProvider.OLLAMA_CLOUD -> {
+            Text(
+                "Ollama's hosted inference, run much larger models than a local machine could handle. Get a key at ollama.com/settings/keys.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 14.dp, bottom = 10.dp)
+            )
+            OutlinedTextField(
+                value = ollamaCloudApiKey,
+                onValueChange = onOllamaCloudKeyChange,
+                label = { Text("Ollama Cloud API key") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = ollamaCloudModel,
+                onValueChange = onOllamaCloudModelChange,
+                label = { Text("Model") },
+                placeholder = { Text("gpt-oss:120b-cloud") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
             )

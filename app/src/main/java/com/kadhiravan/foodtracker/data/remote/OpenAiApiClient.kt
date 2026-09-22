@@ -54,7 +54,8 @@ class OpenAiApiClient : ChatApiClient {
         usdaApiKey: String,
         geminiModel: String,
         ollamaModel: String,
-        openaiModel: String
+        openaiModel: String,
+        ollamaCloudModel: String
     ): String = withContext(Dispatchers.IO) {
         if (apiKey.isBlank()) {
             throw OpenAiApiException("No OpenAI API key set. Add one in Settings.")

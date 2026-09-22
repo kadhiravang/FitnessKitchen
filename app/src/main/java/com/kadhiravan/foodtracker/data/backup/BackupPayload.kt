@@ -34,6 +34,8 @@ data class SecurePrefsBackup(
     val geminiModel: String,
     val ollamaServerUrl: String,
     val ollamaModel: String,
+    val ollamaCloudApiKey: String,
+    val ollamaCloudModel: String,
     val claudeApiKey: String,
     val openaiApiKey: String,
     val openaiModel: String,

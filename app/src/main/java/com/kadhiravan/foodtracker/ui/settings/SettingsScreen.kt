@@ -61,6 +61,8 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
     var nvidiaApiKey by remember { mutableStateOf(securePrefs.nvidiaApiKey) }
     var ollamaServerUrl by remember { mutableStateOf(securePrefs.ollamaServerUrl) }
     var ollamaModel by remember { mutableStateOf(securePrefs.ollamaModel) }
+    var ollamaCloudApiKey by remember { mutableStateOf(securePrefs.ollamaCloudApiKey) }
+    var ollamaCloudModel by remember { mutableStateOf(securePrefs.ollamaCloudModel) }
     var claudeApiKey by remember { mutableStateOf(securePrefs.claudeApiKey) }
     var openaiApiKey by remember { mutableStateOf(securePrefs.openaiApiKey) }
     var openaiModel by remember { mutableStateOf(securePrefs.openaiModel) }
@@ -231,6 +233,30 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                                 onValueChange = { ollamaModel = it; saved = false },
                                 label = { Text("Model") },
                                 placeholder = { Text("llama3.1") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
+                            )
+                        }
+                        ChatProvider.OLLAMA_CLOUD -> {
+                            Text(
+                                "Ollama's hosted inference, run much larger models than a local machine could handle. No per-turn USDA lookups (that's Gemini-only for now). Get a key at ollama.com/settings/keys.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 14.dp, bottom = 10.dp)
+                            )
+                            OutlinedTextField(
+                                value = ollamaCloudApiKey,
+                                onValueChange = { ollamaCloudApiKey = it; saved = false },
+                                label = { Text("Ollama Cloud API key") },
+                                singleLine = true,
+                                visualTransformation = PasswordVisualTransformation(),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            OutlinedTextField(
+                                value = ollamaCloudModel,
+                                onValueChange = { ollamaCloudModel = it; saved = false },
+                                label = { Text("Model") },
+                                placeholder = { Text("gpt-oss:120b-cloud") },
                                 singleLine = true,
                                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
                             )
@@ -440,6 +466,8 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                     securePrefs.nvidiaApiKey = nvidiaApiKey.trim()
                     securePrefs.ollamaServerUrl = ollamaServerUrl.trim()
                     securePrefs.ollamaModel = ollamaModel.trim()
+                    securePrefs.ollamaCloudApiKey = ollamaCloudApiKey.trim()
+                    securePrefs.ollamaCloudModel = ollamaCloudModel.trim()
                     securePrefs.claudeApiKey = claudeApiKey.trim()
                     securePrefs.openaiApiKey = openaiApiKey.trim()
                     securePrefs.openaiModel = openaiModel.trim()

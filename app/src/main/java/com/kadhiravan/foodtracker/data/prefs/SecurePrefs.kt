@@ -90,6 +90,16 @@ class SecurePrefs(context: Context) {
         get() = prefs.getString(KEY_OLLAMA_MODEL, "") ?: ""
         set(value) = prefs.edit().putString(KEY_OLLAMA_MODEL, value).apply()
 
+    var ollamaCloudApiKey: String
+        get() = prefs.getString(KEY_OLLAMA_CLOUD_API_KEY, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_OLLAMA_CLOUD_API_KEY, value).apply()
+
+    /** Ollama Cloud model id, distinct from [ollamaModel] since the cloud catalog (e.g.
+     * "gpt-oss:120b-cloud") is different from whatever's pulled locally. */
+    var ollamaCloudModel: String
+        get() = prefs.getString(KEY_OLLAMA_CLOUD_MODEL, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_OLLAMA_CLOUD_MODEL, value).apply()
+
     var claudeApiKey: String
         get() = prefs.getString(KEY_CLAUDE_API_KEY, "") ?: ""
         set(value) = prefs.edit().putString(KEY_CLAUDE_API_KEY, value).apply()
@@ -221,6 +231,8 @@ class SecurePrefs(context: Context) {
         private const val KEY_USDA_API_KEY = "usda_api_key"
         private const val KEY_OLLAMA_SERVER_URL = "ollama_server_url"
         private const val KEY_OLLAMA_MODEL = "ollama_model"
+        private const val KEY_OLLAMA_CLOUD_API_KEY = "ollama_cloud_api_key"
+        private const val KEY_OLLAMA_CLOUD_MODEL = "ollama_cloud_model"
         private const val KEY_CLAUDE_API_KEY = "claude_api_key"
         private const val KEY_OPENAI_API_KEY = "openai_api_key"
         private const val KEY_OPENAI_MODEL = "openai_model"
@@ -250,6 +262,7 @@ enum class ChatProvider(val displayName: String) {
     GOOGLE("Google Gemini"),
     NVIDIA("NVIDIA (deepseek)"),
     OLLAMA("Ollama (local)"),
+    OLLAMA_CLOUD("Ollama Cloud"),
     CLAUDE("Claude (Anthropic)"),
     OPENAI("OpenAI")
 }

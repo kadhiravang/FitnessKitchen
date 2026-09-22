@@ -18,6 +18,7 @@ interface ChatApiClient {
         usdaApiKey: String = "",
         geminiModel: String = "",
         ollamaModel: String = "",
-        openaiModel: String = ""
+        openaiModel: String = "",
+        ollamaCloudModel: String = ""
     ): String
 }

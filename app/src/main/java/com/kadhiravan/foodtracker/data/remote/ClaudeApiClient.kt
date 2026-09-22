@@ -54,7 +54,8 @@ class ClaudeApiClient : ChatApiClient {
         usdaApiKey: String,
         geminiModel: String,
         ollamaModel: String,
-        openaiModel: String
+        openaiModel: String,
+        ollamaCloudModel: String
     ): String = withContext(Dispatchers.IO) {
         if (apiKey.isBlank()) {
             throw ClaudeApiException("No Claude API key set. Add one in Settings.")

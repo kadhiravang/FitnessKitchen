@@ -63,7 +63,8 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
         usdaApiKey: String,
         geminiModel: String,
         ollamaModel: String,
-        openaiModel: String
+        openaiModel: String,
+        ollamaCloudModel: String
     ): String = withContext(Dispatchers.IO) {
         runConversation(history, newUserText, apiKey, knownFoods, todaysLogSummary, usdaApiKey, geminiModel)
     }

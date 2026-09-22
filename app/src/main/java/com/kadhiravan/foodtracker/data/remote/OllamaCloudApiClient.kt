@@ -22,17 +22,17 @@ import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class NvidiaApiException(message: String) : IOException(message)
+class OllamaCloudApiException(message: String) : IOException(message)
 
 /**
- * Talks to NVIDIA's OpenAI-compatible chat completions endpoint to hold a running
- * conversation about what the user ate. The assistant either asks a clarifying
- * question (plain text) or, once confident, replies with a short line plus a
- * fenced ```log block that [LogCardParser] turns into a confirmable food card , 
- * grounded against the user's own food catalog so known dishes get accurate
- * calories instead of guesses.
+ * Talks to Ollama's hosted cloud inference (ollama.com), same `/api/chat` request/response
+ * shape as [OllamaApiClient]'s local server, just a fixed base URL and a real API key
+ * (`Authorization: Bearer`) instead of a LAN address with no auth. Lets you run much larger
+ * models (e.g. "gpt-oss:120b-cloud") than a phone-adjacent computer could host locally, at
+ * the cost of it being a hosted service again, not fully offline like local Ollama. Same
+ * scope as the other non-Gemini providers: no per-turn USDA tool-calling grounding.
  */
-class NvidiaApiClient : ChatApiClient {
+class OllamaCloudApiClient : ChatApiClient {
 
     private val json = Json { ignoreUnknownKeys = true }
 
@@ -42,8 +42,6 @@ class NvidiaApiClient : ChatApiClient {
 
     private val httpClient = OkHttpClient.Builder()
         .connectTimeout(20, TimeUnit.SECONDS)
-        // Generous, a growing chat history means a bigger prompt each turn, and this
-        // model can take a while to respond under load. 45s was too tight in practice.
         .readTimeout(120, TimeUnit.SECONDS)
         .dns(ResilientDns(bootstrapClient))
         .build()
@@ -61,7 +59,10 @@ class NvidiaApiClient : ChatApiClient {
         ollamaCloudModel: String
     ): String = withContext(Dispatchers.IO) {
         if (apiKey.isBlank()) {
-            throw NvidiaApiException("No NVIDIA API key set. Add one in Settings.")
+            throw OllamaCloudApiException("No Ollama Cloud API key set. Add one in Settings.")
+        }
+        if (ollamaCloudModel.isBlank()) {
+            throw OllamaCloudApiException("No Ollama Cloud model set. Add one in Settings, e.g. \"gpt-oss:120b-cloud\".")
         }
 
         val knownFoodsJson = knownFoods.joinToString(prefix = "[", postfix = "]") { food ->
@@ -105,7 +106,7 @@ class NvidiaApiClient : ChatApiClient {
               quantity and set matchedKnownFood true; otherwise estimate all four realistically
               from your knowledge of Indian cuisine and set matchedKnownFood false.
             - Keep every reply short, a couple of sentences at most, like a text message.
-            - You're told what the user has already eaten today below. Use it for context , 
+            - You're told what the user has already eaten today below. Use it for context,
               e.g. if asked "what should I eat now" or "how am I doing today", answer using
               those real numbers instead of guessing. Offer a brief suggestion when it's
               naturally relevant (they're close to/over a typical daily calorie range, a meal
@@ -116,23 +117,19 @@ class NvidiaApiClient : ChatApiClient {
         """.trimIndent()
 
         val apiMessages = buildList {
-            add(ApiChatMessage(role = "system", content = systemPrompt))
+            add(OllamaCloudMessage(role = "system", content = systemPrompt))
             history.forEach { msg ->
-                add(ApiChatMessage(role = if (msg.role == ChatRole.USER) "user" else "assistant", content = msg.content))
+                add(OllamaCloudMessage(role = if (msg.role == ChatRole.USER) "user" else "assistant", content = msg.content))
             }
-            add(ApiChatMessage(role = "user", content = newUserText))
+            add(OllamaCloudMessage(role = "user", content = newUserText))
         }
 
-        val requestBody = ChatCompletionRequest(
-            model = "deepseek-ai/deepseek-v4-flash-0731",
-            messages = apiMessages
-        )
-
-        val body = json.encodeToString(ChatCompletionRequest.serializer(), requestBody)
+        val requestBody = OllamaCloudChatRequest(model = ollamaCloudModel, messages = apiMessages)
+        val body = json.encodeToString(OllamaCloudChatRequest.serializer(), requestBody)
             .toRequestBody("application/json".toMediaType())
 
         val request = Request.Builder()
-            .url("https://integrate.api.nvidia.com/v1/chat/completions")
+            .url("https://ollama.com/api/chat")
             .addHeader("Authorization", "Bearer $apiKey")
             .addHeader("Content-Type", "application/json")
             .post(body)
@@ -140,32 +137,19 @@ class NvidiaApiClient : ChatApiClient {
 
         val startMs = System.currentTimeMillis()
         val responseText = executeWithRetry(request)
-        Log.d(TAG, "NVIDIA API round trip: ${System.currentTimeMillis() - startMs}ms")
+        Log.d(TAG, "Ollama Cloud round trip: ${System.currentTimeMillis() - startMs}ms")
 
         val completion = try {
-            json.decodeFromString(ChatCompletionResponse.serializer(), responseText)
+            json.decodeFromString(OllamaCloudChatResponse.serializer(), responseText)
         } catch (e: Exception) {
-            throw NvidiaApiException("Unexpected response from NVIDIA API.")
+            throw OllamaCloudApiException("Unexpected response from Ollama Cloud.")
         }
 
-        val content = completion.choices.firstOrNull()?.message?.content
-            ?: throw NvidiaApiException("NVIDIA API returned no content.")
-
-        content.replace(Regex("(?s)<think>.*?</think>"), "").trim()
+        completion.message?.content?.trim()
+            ?: throw OllamaCloudApiException("Ollama Cloud returned no content.")
     }
 
-    /**
-     * Runs the request, retrying with backoff on transient failures (network hiccups,
-     * rate limiting, or an overloaded upstream, 429/5xx/529) so a momentary blip doesn't
-     * force the user to manually resend. Non-transient failures (bad key, bad request)
-     * fail immediately.
-     */
     private suspend fun executeWithRetry(request: Request): String {
-        // Each failed attempt can already cost several seconds fighting a flaky DNS
-        // resolver (see ResilientDns) before backoff even starts, so a low attempt count
-        // used to burn the whole retry budget on DNS alone, leaving none to ride out a
-        // separately transient NVIDIA-side overload (429/529/5xx). More attempts with a
-        // capped backoff gives both problems room to resolve within one exchange.
         val maxAttempts = 6
         var attempt = 0
         val startMs = System.currentTimeMillis()
@@ -174,11 +158,9 @@ class NvidiaApiClient : ChatApiClient {
             val response = try {
                 executeCancellable(request)
             } catch (e: IOException) {
-                // Covers UnknownHostException too, a brief DNS hiccup (common right after
-                // a phone hands off between Wi-Fi and cellular) looks identical to this.
                 Log.d(TAG, "attempt $attempt failed after ${System.currentTimeMillis() - startMs}ms: ${e.javaClass.simpleName}: ${e.message}")
                 if (attempt >= maxAttempts) {
-                    throw NvidiaApiException("Network error talking to NVIDIA API: ${e.message}")
+                    throw OllamaCloudApiException("Network error talking to Ollama Cloud: ${e.message}")
                 }
                 delay(backoffMs(attempt))
                 continue
@@ -187,22 +169,17 @@ class NvidiaApiClient : ChatApiClient {
             if (response.isSuccessful) return bodyText
 
             Log.d(TAG, "attempt $attempt got HTTP ${response.code} after ${System.currentTimeMillis() - startMs}ms")
-            val transient = response.code == 429 || response.code == 529 || response.code in 500..599
+            val transient = response.code == 429 || response.code in 500..599
             if (transient && attempt < maxAttempts) {
                 delay(backoffMs(attempt))
                 continue
             }
-            throw NvidiaApiException("NVIDIA API error ${response.code}: ${bodyText.take(300)}")
+            throw OllamaCloudApiException("Ollama Cloud error ${response.code}: ${bodyText.take(500)}")
         }
     }
 
     private fun backoffMs(attempt: Int): Long = (1000L * (1L shl (attempt - 1))).coerceAtMost(8000L)
 
-    /**
-     * Suspends until the call completes, but unlike the blocking [Call.execute], it actually
-     * aborts the in-flight HTTP call when the coroutine is cancelled (e.g. the user tapped
-     * Cancel while a reply was hanging), instead of leaving it running unattended.
-     */
     private suspend fun executeCancellable(request: Request): Response =
         suspendCancellableCoroutine { cont ->
             val call = httpClient.newCall(request)
@@ -221,34 +198,19 @@ class NvidiaApiClient : ChatApiClient {
     private fun String.escapeJson(): String = replace("\\", "\\\\").replace("\"", "\\\"")
 
     private companion object {
-        const val TAG = "NvidiaApiClient"
+        const val TAG = "OllamaCloudApiClient"
     }
 }
 
 @Serializable
-private data class ApiChatMessage(val role: String, val content: String)
+private data class OllamaCloudMessage(val role: String, val content: String)
 
 @Serializable
-private data class ChatCompletionRequest(
+private data class OllamaCloudChatRequest(
     val model: String,
-    val messages: List<ApiChatMessage>,
-    val temperature: Double = 0.3,
-    val max_tokens: Int = 1024,
-    // This model defaults to an extended "thinking" reasoning pass unless told otherwise,
-    // which was both slow and, combined with a smaller max_tokens, could burn the whole
-    // token budget on reasoning before ever emitting the actual reply/log block, leaving the
-    // user with no calorie estimate at all. Disabled for a fast, direct answer every time.
-    val chat_template_kwargs: ChatTemplateKwargs = ChatTemplateKwargs()
+    val messages: List<OllamaCloudMessage>,
+    val stream: Boolean = false
 )
 
 @Serializable
-private data class ChatTemplateKwargs(val thinking: Boolean = false)
-
-@Serializable
-private data class ChatCompletionResponse(val choices: List<ChatCompletionChoice>)
-
-@Serializable
-private data class ChatCompletionChoice(val message: ChatMessageContent)
-
-@Serializable
-private data class ChatMessageContent(val content: String)
+private data class OllamaCloudChatResponse(val message: OllamaCloudMessage? = null)

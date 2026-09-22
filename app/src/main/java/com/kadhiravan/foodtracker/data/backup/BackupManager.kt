@@ -69,6 +69,8 @@ class BackupManager(
                 geminiModel = securePrefs.geminiModel,
                 ollamaServerUrl = securePrefs.ollamaServerUrl,
                 ollamaModel = securePrefs.ollamaModel,
+                ollamaCloudApiKey = securePrefs.ollamaCloudApiKey,
+                ollamaCloudModel = securePrefs.ollamaCloudModel,
                 claudeApiKey = securePrefs.claudeApiKey,
                 openaiApiKey = securePrefs.openaiApiKey,
                 openaiModel = securePrefs.openaiModel,
@@ -188,6 +190,8 @@ class BackupManager(
         securePrefs.geminiModel = p.geminiModel
         securePrefs.ollamaServerUrl = p.ollamaServerUrl
         securePrefs.ollamaModel = p.ollamaModel
+        securePrefs.ollamaCloudApiKey = p.ollamaCloudApiKey
+        securePrefs.ollamaCloudModel = p.ollamaCloudModel
         securePrefs.claudeApiKey = p.claudeApiKey
         securePrefs.openaiApiKey = p.openaiApiKey
         securePrefs.openaiModel = p.openaiModel

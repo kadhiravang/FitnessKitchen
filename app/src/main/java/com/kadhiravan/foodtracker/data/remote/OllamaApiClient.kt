@@ -46,7 +46,8 @@ class OllamaApiClient : ChatApiClient {
         usdaApiKey: String,
         geminiModel: String,
         ollamaModel: String,
-        openaiModel: String
+        openaiModel: String,
+        ollamaCloudModel: String
     ): String = withContext(Dispatchers.IO) {
         val serverUrl = apiKey
         if (serverUrl.isBlank()) {

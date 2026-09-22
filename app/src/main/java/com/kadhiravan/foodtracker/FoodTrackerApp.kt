@@ -18,6 +18,7 @@ import com.kadhiravan.foodtracker.data.remote.GoogleApiClient
 import com.kadhiravan.foodtracker.data.remote.NvidiaApiClient
 import com.kadhiravan.foodtracker.data.remote.ClaudeApiClient
 import com.kadhiravan.foodtracker.data.remote.OllamaApiClient
+import com.kadhiravan.foodtracker.data.remote.OllamaCloudApiClient
 import com.kadhiravan.foodtracker.data.remote.OpenAiApiClient
 import com.kadhiravan.foodtracker.data.remote.UsdaNutritionClient
 import com.kadhiravan.foodtracker.data.repository.ChatRepository
@@ -46,6 +47,7 @@ class FoodTrackerApp : Application(), Configuration.Provider {
     private val googleApiClient by lazy { GoogleApiClient(usdaNutritionClient) }
     private val nvidiaApiClient by lazy { NvidiaApiClient() }
     private val ollamaApiClient by lazy { OllamaApiClient() }
+    private val ollamaCloudApiClient by lazy { OllamaCloudApiClient() }
     private val claudeApiClient by lazy { ClaudeApiClient() }
     private val openaiApiClient by lazy { OpenAiApiClient() }
     val chatRepository by lazy {
@@ -54,6 +56,7 @@ class FoodTrackerApp : Application(), Configuration.Provider {
             googleApiClient,
             nvidiaApiClient,
             ollamaApiClient,
+            ollamaCloudApiClient,
             claudeApiClient,
             openaiApiClient,
             foodRepository,

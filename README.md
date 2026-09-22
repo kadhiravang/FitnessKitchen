@@ -139,6 +139,12 @@ with network access enabled: `OLLAMA_HOST=0.0.0.0 ollama serve`. Same caveat
 as NVIDIA above: no USDA-grounding or tool-calling on this path.
 
 Also available as chat providers, same no-grounding caveat as NVIDIA/Ollama:
+- **Ollama Cloud**: Ollama's own hosted inference, same `/api/chat` shape as
+  local Ollama, just a fixed `ollama.com` endpoint and a real API key
+  (no LAN setup, no `OLLAMA_HOST` fuss) instead of a self-hosted server. Lets
+  you run much larger models (e.g. `gpt-oss:120b-cloud`) than a local machine
+  could. Get a key at
+  [ollama.com/settings/keys](https://ollama.com/settings/keys).
 - **Claude (Anthropic)**: paste a key from
   [console.anthropic.com](https://console.anthropic.com).
 - **OpenAI**: paste a key from
