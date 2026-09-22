@@ -62,7 +62,8 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
         todaysLogSummary: String,
         usdaApiKey: String,
         geminiModel: String,
-        ollamaModel: String
+        ollamaModel: String,
+        openaiModel: String
     ): String = withContext(Dispatchers.IO) {
         runConversation(history, newUserText, apiKey, knownFoods, todaysLogSummary, usdaApiKey, geminiModel)
     }
@@ -318,11 +319,10 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
     private companion object {
         const val TAG = "GoogleApiClient"
         // Fallback if Settings hasn't set a model yet (fresh install, or the caller
-        // passed a blank string). Free-tier model; gemini-2.5-flash was retired, then
-        // gemini-3.6-flash's free-tier daily cap proved unusually low (~20 requests/day).
-        // A per-model Settings switch (see GeminiModel) lets the user hop to 3.7 or 3.6
-        // if 3.8 hits its own daily cap, since each model's quota is tracked separately.
-        const val MODEL = "gemini-3.8-flash"
+        // passed a blank string) — kept in sync with GeminiModel.DEFAULT. A per-model
+        // Settings switch (see GeminiModel) lets the user hop to 3.7 or 3.8 if this one
+        // hits its daily cap, since each model's quota is tracked separately.
+        const val MODEL = "gemini-3.6-flash"
         // Caps how many tool-call round TRIPS one message can trigger, not how many
         // lookups, since Gemini batches several functionCall parts into a single turn
         // when it can (e.g. every ingredient of a custom dish at once). This just stops a

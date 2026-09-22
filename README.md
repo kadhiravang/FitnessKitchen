@@ -101,8 +101,9 @@ Android SDK on this machine at all.
 ## First run
 
 1. **Get a free Gemini API key** from [aistudio.google.com/apikey](https://aistudio.google.com/apikey).
-   Gemini 2.5 Flash's free tier is what the chat runs on by default, no
-   billing required.
+   Gemini 3.6 Flash's free tier is what the chat runs on by default, no
+   billing required. Settings has a model picker (3.6/3.7/3.8) since each
+   model's free-tier daily quota is tracked separately, switch if one runs dry.
 2. Install and open the app, go to **Settings**, paste the key in under
    **Gemini API key** (stored encrypted on-device via
    `EncryptedSharedPreferences`, never hardcoded, never included anywhere but
@@ -136,6 +137,14 @@ phone itself) and the model name. Ollama only listens on `127.0.0.1` by
 default, so it won't accept a connection from the phone until you start it
 with network access enabled: `OLLAMA_HOST=0.0.0.0 ollama serve`. Same caveat
 as NVIDIA above: no USDA-grounding or tool-calling on this path.
+
+Also available as chat providers, same no-grounding caveat as NVIDIA/Ollama:
+- **Claude (Anthropic)**: paste a key from
+  [console.anthropic.com](https://console.anthropic.com).
+- **OpenAI**: paste a key from
+  [platform.openai.com/api-keys](https://platform.openai.com/api-keys) and a
+  model id (e.g. `gpt-4.1`), left for you to fill in rather than hardcoded
+  since OpenAI's model catalog changes often.
 
 ### Voice transcription options (all optional)
 

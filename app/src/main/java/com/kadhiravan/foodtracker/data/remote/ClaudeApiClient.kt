@@ -5,36 +5,44 @@ import com.kadhiravan.foodtracker.data.local.ChatMessage
 import com.kadhiravan.foodtracker.data.local.ChatRole
 import com.kadhiravan.foodtracker.data.local.FoodItem
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
+import okhttp3.Call
+import okhttp3.Callback
 import okhttp3.MediaType.Companion.toMediaType
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import okhttp3.RequestBody.Companion.toRequestBody
+import okhttp3.Response
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 
-class OllamaApiException(message: String) : IOException(message)
+class ClaudeApiException(message: String) : IOException(message)
 
 /**
- * Talks to a locally-running Ollama server (see ollama.com), the fast alternative when a
- * hosted provider's free tier is slow or rate-limited, everything runs on the user's own
- * machine/network instead of a shared public API. No API key, no per-turn tool-calling
- * grounding (like [NvidiaApiClient], not [GoogleApiClient]), just a direct chat completion
- * asked to reply with the same fenced ```log block [LogCardParser] expects.
+ * Talks to Anthropic's Messages API to hold a running conversation about what the user
+ * ate, same fenced ```log block contract as [NvidiaApiClient]/[OllamaApiClient] (no
+ * per-turn USDA tool-calling here, that's [GoogleApiClient]-only for now). Model is fixed
+ * to a current Claude id rather than user-configurable, unlike Ollama/OpenAI, Anthropic's
+ * catalog doesn't churn the way OpenAI's does and a sensible default needs no extra field.
  */
-class OllamaApiClient : ChatApiClient {
+class ClaudeApiClient : ChatApiClient {
 
     private val json = Json { ignoreUnknownKeys = true }
 
+    private val bootstrapClient = OkHttpClient.Builder()
+        .connectTimeout(10, TimeUnit.SECONDS)
+        .build()
+
     private val httpClient = OkHttpClient.Builder()
-        // A local/LAN server is either up or it isn't, no point retrying a flaky public
-        // DNS/network path the way NvidiaApiClient does for a hosted API.
-        .connectTimeout(5, TimeUnit.SECONDS)
-        // Generous: a large local model on modest hardware can genuinely take a while to
-        // generate, especially cold (not yet loaded into memory) on the first call.
+        .connectTimeout(20, TimeUnit.SECONDS)
         .readTimeout(120, TimeUnit.SECONDS)
+        .dns(ResilientDns(bootstrapClient))
         .build()
 
     override suspend fun sendMessage(
@@ -48,12 +56,8 @@ class OllamaApiClient : ChatApiClient {
         ollamaModel: String,
         openaiModel: String
     ): String = withContext(Dispatchers.IO) {
-        val serverUrl = apiKey
-        if (serverUrl.isBlank()) {
-            throw OllamaApiException("No Ollama server URL set. Add one in Settings.")
-        }
-        if (ollamaModel.isBlank()) {
-            throw OllamaApiException("No Ollama model set. Add one in Settings, e.g. \"llama3.1\".")
+        if (apiKey.isBlank()) {
+            throw ClaudeApiException("No Claude API key set. Add one in Settings.")
         }
 
         val knownFoodsJson = knownFoods.joinToString(prefix = "[", postfix = "]") { food ->
@@ -108,62 +112,114 @@ class OllamaApiClient : ChatApiClient {
         """.trimIndent()
 
         val apiMessages = buildList {
-            add(OllamaMessage(role = "system", content = systemPrompt))
             history.forEach { msg ->
-                add(OllamaMessage(role = if (msg.role == ChatRole.USER) "user" else "assistant", content = msg.content))
+                add(ClaudeMessage(role = if (msg.role == ChatRole.USER) "user" else "assistant", content = msg.content))
             }
-            add(OllamaMessage(role = "user", content = newUserText))
+            add(ClaudeMessage(role = "user", content = newUserText))
         }
 
-        val requestBody = OllamaChatRequest(model = ollamaModel, messages = apiMessages)
-        val body = json.encodeToString(OllamaChatRequest.serializer(), requestBody)
+        val requestBody = ClaudeMessagesRequest(
+            model = MODEL,
+            maxTokens = 1024,
+            system = systemPrompt,
+            messages = apiMessages
+        )
+
+        val body = json.encodeToString(ClaudeMessagesRequest.serializer(), requestBody)
             .toRequestBody("application/json".toMediaType())
 
         val request = Request.Builder()
-            .url("${serverUrl.trimEnd('/')}/api/chat")
+            .url("https://api.anthropic.com/v1/messages")
+            .addHeader("x-api-key", apiKey)
+            .addHeader("anthropic-version", "2023-06-01")
+            .addHeader("Content-Type", "application/json")
             .post(body)
             .build()
 
         val startMs = System.currentTimeMillis()
-        val bodyText = try {
-            httpClient.newCall(request).execute().use { response ->
-                val text = response.body?.string().orEmpty()
-                if (!response.isSuccessful) {
-                    throw OllamaApiException("Ollama server error ${response.code}: ${text.take(500)}")
-                }
-                text
-            }
-        } catch (e: IOException) {
-            throw OllamaApiException("Couldn't reach Ollama at $serverUrl, is it running? (${e.message})")
-        }
-        Log.d(TAG, "Ollama round trip: ${System.currentTimeMillis() - startMs}ms")
+        val responseText = executeWithRetry(request)
+        Log.d(TAG, "Claude API round trip: ${System.currentTimeMillis() - startMs}ms")
 
         val completion = try {
-            json.decodeFromString(OllamaChatResponse.serializer(), bodyText)
+            json.decodeFromString(ClaudeMessagesResponse.serializer(), responseText)
         } catch (e: Exception) {
-            throw OllamaApiException("Unexpected response from Ollama.")
+            throw ClaudeApiException("Unexpected response from Claude API.")
         }
 
-        completion.message?.content?.trim()
-            ?: throw OllamaApiException("Ollama returned no content.")
+        completion.content.firstOrNull { it.type == "text" }?.text?.trim()
+            ?: throw ClaudeApiException("Claude API returned no text content.")
     }
+
+    private suspend fun executeWithRetry(request: Request): String {
+        val maxAttempts = 6
+        var attempt = 0
+        val startMs = System.currentTimeMillis()
+        while (true) {
+            attempt++
+            val response = try {
+                executeCancellable(request)
+            } catch (e: IOException) {
+                Log.d(TAG, "attempt $attempt failed after ${System.currentTimeMillis() - startMs}ms: ${e.javaClass.simpleName}: ${e.message}")
+                if (attempt >= maxAttempts) {
+                    throw ClaudeApiException("Network error talking to Claude API: ${e.message}")
+                }
+                delay(backoffMs(attempt))
+                continue
+            }
+            val bodyText = response.use { it.body?.string().orEmpty() }
+            if (response.isSuccessful) return bodyText
+
+            Log.d(TAG, "attempt $attempt got HTTP ${response.code} after ${System.currentTimeMillis() - startMs}ms")
+            val transient = response.code == 429 || response.code in 500..599
+            if (transient && attempt < maxAttempts) {
+                delay(backoffMs(attempt))
+                continue
+            }
+            throw ClaudeApiException("Claude API error ${response.code}: ${bodyText.take(500)}")
+        }
+    }
+
+    private fun backoffMs(attempt: Int): Long = (1000L * (1L shl (attempt - 1))).coerceAtMost(8000L)
+
+    private suspend fun executeCancellable(request: Request): Response =
+        suspendCancellableCoroutine { cont ->
+            val call = httpClient.newCall(request)
+            cont.invokeOnCancellation { call.cancel() }
+            call.enqueue(object : Callback {
+                override fun onFailure(call: Call, e: IOException) {
+                    if (cont.isActive) cont.resumeWithException(e)
+                }
+
+                override fun onResponse(call: Call, response: Response) {
+                    if (cont.isActive) cont.resume(response) else response.close()
+                }
+            })
+        }
 
     private fun String.escapeJson(): String = replace("\\", "\\\\").replace("\"", "\\\"")
 
     private companion object {
-        const val TAG = "OllamaApiClient"
+        const val TAG = "ClaudeApiClient"
+        // Solid default balance of quality/speed/cost for this use case; Settings has no
+        // model picker for Claude since Anthropic's catalog is far more stable than
+        // OpenAI's, a hardcoded sensible default doesn't carry the same staleness risk.
+        const val MODEL = "claude-sonnet-5"
     }
 }
 
 @Serializable
-private data class OllamaMessage(val role: String, val content: String)
+private data class ClaudeMessage(val role: String, val content: String)
 
 @Serializable
-private data class OllamaChatRequest(
+private data class ClaudeMessagesRequest(
     val model: String,
-    val messages: List<OllamaMessage>,
-    val stream: Boolean = false
+    @kotlinx.serialization.SerialName("max_tokens") val maxTokens: Int,
+    val system: String,
+    val messages: List<ClaudeMessage>
 )
 
 @Serializable
-private data class OllamaChatResponse(val message: OllamaMessage? = null)
+private data class ClaudeMessagesResponse(val content: List<ClaudeContentBlock> = emptyList())
+
+@Serializable
+private data class ClaudeContentBlock(val type: String, val text: String? = null)

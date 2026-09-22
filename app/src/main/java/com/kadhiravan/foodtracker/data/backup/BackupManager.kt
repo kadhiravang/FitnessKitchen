@@ -69,6 +69,9 @@ class BackupManager(
                 geminiModel = securePrefs.geminiModel,
                 ollamaServerUrl = securePrefs.ollamaServerUrl,
                 ollamaModel = securePrefs.ollamaModel,
+                claudeApiKey = securePrefs.claudeApiKey,
+                openaiApiKey = securePrefs.openaiApiKey,
+                openaiModel = securePrefs.openaiModel,
                 dailyCalorieGoal = securePrefs.dailyCalorieGoal,
                 calorieBufferKcal = securePrefs.calorieBufferKcal,
                 targetWeightKg = securePrefs.targetWeightKg,
@@ -185,6 +188,9 @@ class BackupManager(
         securePrefs.geminiModel = p.geminiModel
         securePrefs.ollamaServerUrl = p.ollamaServerUrl
         securePrefs.ollamaModel = p.ollamaModel
+        securePrefs.claudeApiKey = p.claudeApiKey
+        securePrefs.openaiApiKey = p.openaiApiKey
+        securePrefs.openaiModel = p.openaiModel
         securePrefs.dailyCalorieGoal = p.dailyCalorieGoal
         securePrefs.calorieBufferKcal = p.calorieBufferKcal
         securePrefs.targetWeightKg = p.targetWeightKg

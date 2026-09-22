@@ -61,6 +61,9 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
     var nvidiaApiKey by remember { mutableStateOf(securePrefs.nvidiaApiKey) }
     var ollamaServerUrl by remember { mutableStateOf(securePrefs.ollamaServerUrl) }
     var ollamaModel by remember { mutableStateOf(securePrefs.ollamaModel) }
+    var claudeApiKey by remember { mutableStateOf(securePrefs.claudeApiKey) }
+    var openaiApiKey by remember { mutableStateOf(securePrefs.openaiApiKey) }
+    var openaiModel by remember { mutableStateOf(securePrefs.openaiModel) }
     var usdaApiKey by remember { mutableStateOf(securePrefs.usdaApiKey) }
     var recognitionLanguage by remember { mutableStateOf(securePrefs.recognitionLanguage) }
     var whisperServerUrl by remember { mutableStateOf(securePrefs.whisperServerUrl) }
@@ -232,6 +235,46 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
                             )
                         }
+                        ChatProvider.CLAUDE -> {
+                            Text(
+                                "No per-turn USDA lookups (that's Gemini-only for now). Get a key at console.anthropic.com.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 14.dp, bottom = 10.dp)
+                            )
+                            OutlinedTextField(
+                                value = claudeApiKey,
+                                onValueChange = { claudeApiKey = it; saved = false },
+                                label = { Text("Claude API key") },
+                                singleLine = true,
+                                visualTransformation = PasswordVisualTransformation(),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        ChatProvider.OPENAI -> {
+                            Text(
+                                "No per-turn USDA lookups (that's Gemini-only for now). Get a key at platform.openai.com/api-keys.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 14.dp, bottom = 10.dp)
+                            )
+                            OutlinedTextField(
+                                value = openaiApiKey,
+                                onValueChange = { openaiApiKey = it; saved = false },
+                                label = { Text("OpenAI API key") },
+                                singleLine = true,
+                                visualTransformation = PasswordVisualTransformation(),
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            OutlinedTextField(
+                                value = openaiModel,
+                                onValueChange = { openaiModel = it; saved = false },
+                                label = { Text("Model") },
+                                placeholder = { Text("gpt-4.1") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
+                            )
+                        }
                     }
                 }
             }
@@ -397,6 +440,9 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                     securePrefs.nvidiaApiKey = nvidiaApiKey.trim()
                     securePrefs.ollamaServerUrl = ollamaServerUrl.trim()
                     securePrefs.ollamaModel = ollamaModel.trim()
+                    securePrefs.claudeApiKey = claudeApiKey.trim()
+                    securePrefs.openaiApiKey = openaiApiKey.trim()
+                    securePrefs.openaiModel = openaiModel.trim()
                     securePrefs.usdaApiKey = usdaApiKey.trim()
                     securePrefs.whisperServerUrl = whisperServerUrl.trim()
                     securePrefs.useCloudWhisper = useCloudWhisper

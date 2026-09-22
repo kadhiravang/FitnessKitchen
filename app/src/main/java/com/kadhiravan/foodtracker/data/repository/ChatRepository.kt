@@ -26,6 +26,8 @@ class ChatRepository(
     private val googleApiClient: ChatApiClient,
     private val nvidiaApiClient: ChatApiClient,
     private val ollamaApiClient: ChatApiClient,
+    private val claudeApiClient: ChatApiClient,
+    private val openaiApiClient: ChatApiClient,
     private val foodRepository: FoodRepository,
     private val logRepository: LogRepository,
     private val securePrefs: SecurePrefs
@@ -45,6 +47,8 @@ class ChatRepository(
             ChatProvider.NVIDIA -> nvidiaApiClient to securePrefs.nvidiaApiKey
             ChatProvider.GOOGLE -> googleApiClient to securePrefs.geminiApiKey
             ChatProvider.OLLAMA -> ollamaApiClient to securePrefs.ollamaServerUrl
+            ChatProvider.CLAUDE -> claudeApiClient to securePrefs.claudeApiKey
+            ChatProvider.OPENAI -> openaiApiClient to securePrefs.openaiApiKey
         }
 
         val knownFoods = foodRepository.getAll()
@@ -58,7 +62,8 @@ class ChatRepository(
                 todaysLogSummary = buildLogSummary(logRepository.getForDate(date)),
                 usdaApiKey = securePrefs.usdaApiKey,
                 geminiModel = securePrefs.geminiModel,
-                ollamaModel = securePrefs.ollamaModel
+                ollamaModel = securePrefs.ollamaModel,
+                openaiModel = securePrefs.openaiModel
             )
         } catch (e: CancellationException) {
             // The user cancelled the send, their message stays in the thread, but we

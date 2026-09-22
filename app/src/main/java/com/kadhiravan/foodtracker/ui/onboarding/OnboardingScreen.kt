@@ -81,6 +81,9 @@ fun OnboardingScreen(
     var nvidiaApiKey by remember { mutableStateOf(securePrefs.nvidiaApiKey) }
     var ollamaServerUrl by remember { mutableStateOf(securePrefs.ollamaServerUrl) }
     var ollamaModel by remember { mutableStateOf(securePrefs.ollamaModel) }
+    var claudeApiKey by remember { mutableStateOf(securePrefs.claudeApiKey) }
+    var openaiApiKey by remember { mutableStateOf(securePrefs.openaiApiKey) }
+    var openaiModel by remember { mutableStateOf(securePrefs.openaiModel) }
 
     val scope = rememberCoroutineScope()
 
@@ -104,6 +107,9 @@ fun OnboardingScreen(
         securePrefs.nvidiaApiKey = nvidiaApiKey.trim()
         securePrefs.ollamaServerUrl = ollamaServerUrl.trim()
         securePrefs.ollamaModel = ollamaModel.trim()
+        securePrefs.claudeApiKey = claudeApiKey.trim()
+        securePrefs.openaiApiKey = openaiApiKey.trim()
+        securePrefs.openaiModel = openaiModel.trim()
         securePrefs.onboardingComplete = true
 
         val weight = weightKg.toDoubleOrNull()
@@ -180,7 +186,10 @@ fun OnboardingScreen(
                         geminiApiKey = geminiApiKey, onGeminiKeyChange = { geminiApiKey = it },
                         nvidiaApiKey = nvidiaApiKey, onNvidiaKeyChange = { nvidiaApiKey = it },
                         ollamaServerUrl = ollamaServerUrl, onOllamaServerUrlChange = { ollamaServerUrl = it },
-                        ollamaModel = ollamaModel, onOllamaModelChange = { ollamaModel = it }
+                        ollamaModel = ollamaModel, onOllamaModelChange = { ollamaModel = it },
+                        claudeApiKey = claudeApiKey, onClaudeKeyChange = { claudeApiKey = it },
+                        openaiApiKey = openaiApiKey, onOpenaiKeyChange = { openaiApiKey = it },
+                        openaiModel = openaiModel, onOpenaiModelChange = { openaiModel = it }
                     )
                 }
             }
@@ -344,7 +353,10 @@ private fun ChatSetupStep(
     geminiApiKey: String, onGeminiKeyChange: (String) -> Unit,
     nvidiaApiKey: String, onNvidiaKeyChange: (String) -> Unit,
     ollamaServerUrl: String, onOllamaServerUrlChange: (String) -> Unit,
-    ollamaModel: String, onOllamaModelChange: (String) -> Unit
+    ollamaModel: String, onOllamaModelChange: (String) -> Unit,
+    claudeApiKey: String, onClaudeKeyChange: (String) -> Unit,
+    openaiApiKey: String, onOpenaiKeyChange: (String) -> Unit,
+    openaiModel: String, onOpenaiModelChange: (String) -> Unit
 ) {
     Text("Chat assistant", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
     Text(
@@ -419,6 +431,46 @@ private fun ChatSetupStep(
                 onValueChange = onOllamaModelChange,
                 label = { Text("Model") },
                 placeholder = { Text("llama3.1") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
+            )
+        }
+        ChatProvider.CLAUDE -> {
+            Text(
+                "Get a key at console.anthropic.com.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 14.dp, bottom = 10.dp)
+            )
+            OutlinedTextField(
+                value = claudeApiKey,
+                onValueChange = onClaudeKeyChange,
+                label = { Text("Claude API key") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth()
+            )
+        }
+        ChatProvider.OPENAI -> {
+            Text(
+                "Get a key at platform.openai.com/api-keys.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 14.dp, bottom = 10.dp)
+            )
+            OutlinedTextField(
+                value = openaiApiKey,
+                onValueChange = onOpenaiKeyChange,
+                label = { Text("OpenAI API key") },
+                singleLine = true,
+                visualTransformation = PasswordVisualTransformation(),
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = openaiModel,
+                onValueChange = onOpenaiModelChange,
+                label = { Text("Model") },
+                placeholder = { Text("gpt-4.1") },
                 singleLine = true,
                 modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
             )
