@@ -34,7 +34,12 @@ class OllamaCloudApiException(message: String) : IOException(message)
  */
 class OllamaCloudApiClient : ChatApiClient {
 
-    private val json = Json { ignoreUnknownKeys = true }
+    // encodeDefaults matters here: without it, "stream = false" (equal to its Kotlin
+    // default) gets silently omitted from the encoded request body, and Ollama Cloud
+    // then falls back to its own default of streaming, returning newline-delimited
+    // partial chunks instead of the single JSON object this client expects, this was a
+    // real bug caught live: the "unexpected response" turned out to be exactly that.
+    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     private val bootstrapClient = OkHttpClient.Builder()
         .connectTimeout(10, TimeUnit.SECONDS)
@@ -142,7 +147,7 @@ class OllamaCloudApiClient : ChatApiClient {
         val completion = try {
             json.decodeFromString(OllamaCloudChatResponse.serializer(), responseText)
         } catch (e: Exception) {
-            throw OllamaCloudApiException("Unexpected response from Ollama Cloud.")
+            throw OllamaCloudApiException("Unexpected response from Ollama Cloud: ${responseText.take(500)}")
         }
 
         completion.message?.content?.trim()

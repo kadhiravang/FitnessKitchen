@@ -26,7 +26,11 @@ class OllamaApiException(message: String) : IOException(message)
  */
 class OllamaApiClient : ChatApiClient {
 
-    private val json = Json { ignoreUnknownKeys = true }
+    // encodeDefaults matters here: without it, "stream = false" (equal to its Kotlin
+    // default) gets silently omitted from the encoded request body, and Ollama then
+    // falls back to its own default of streaming, returning newline-delimited partial
+    // chunks instead of the single JSON object this client expects.
+    private val json = Json { ignoreUnknownKeys = true; encodeDefaults = true }
 
     private val httpClient = OkHttpClient.Builder()
         // A local/LAN server is either up or it isn't, no point retrying a flaky public
@@ -142,7 +146,7 @@ class OllamaApiClient : ChatApiClient {
         val completion = try {
             json.decodeFromString(OllamaChatResponse.serializer(), bodyText)
         } catch (e: Exception) {
-            throw OllamaApiException("Unexpected response from Ollama.")
+            throw OllamaApiException("Unexpected response from Ollama: ${bodyText.take(500)}")
         }
 
         completion.message?.content?.trim()

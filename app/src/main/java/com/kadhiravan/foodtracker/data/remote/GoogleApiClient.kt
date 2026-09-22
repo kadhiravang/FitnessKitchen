@@ -196,7 +196,7 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
             val completion = try {
                 json.decodeFromString(GeminiResponse.serializer(), responseText)
             } catch (e: Exception) {
-                throw GoogleApiException("Unexpected response from Gemini API.")
+                throw GoogleApiException("Unexpected response from Gemini API: ${responseText.take(500)}")
             }
 
             val parts = completion.candidates.firstOrNull()?.content?.parts

@@ -144,7 +144,7 @@ class ClaudeApiClient : ChatApiClient {
         val completion = try {
             json.decodeFromString(ClaudeMessagesResponse.serializer(), responseText)
         } catch (e: Exception) {
-            throw ClaudeApiException("Unexpected response from Claude API.")
+            throw ClaudeApiException("Unexpected response from Claude API: ${responseText.take(500)}")
         }
 
         completion.content.firstOrNull { it.type == "text" }?.text?.trim()

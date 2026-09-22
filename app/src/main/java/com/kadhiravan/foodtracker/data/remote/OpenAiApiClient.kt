@@ -141,7 +141,7 @@ class OpenAiApiClient : ChatApiClient {
         val completion = try {
             json.decodeFromString(OpenAiChatResponse.serializer(), responseText)
         } catch (e: Exception) {
-            throw OpenAiApiException("Unexpected response from OpenAI API.")
+            throw OpenAiApiException("Unexpected response from OpenAI API: ${responseText.take(500)}")
         }
 
         completion.choices.firstOrNull()?.message?.content?.trim()

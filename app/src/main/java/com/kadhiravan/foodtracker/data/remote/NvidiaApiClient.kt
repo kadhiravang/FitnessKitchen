@@ -145,7 +145,7 @@ class NvidiaApiClient : ChatApiClient {
         val completion = try {
             json.decodeFromString(ChatCompletionResponse.serializer(), responseText)
         } catch (e: Exception) {
-            throw NvidiaApiException("Unexpected response from NVIDIA API.")
+            throw NvidiaApiException("Unexpected response from NVIDIA API: ${responseText.take(500)}")
         }
 
         val content = completion.choices.firstOrNull()?.message?.content
