@@ -5,6 +5,9 @@ import com.kadhiravan.foodtracker.data.local.ChatMessage
 import com.kadhiravan.foodtracker.data.local.ChatRole
 import com.kadhiravan.foodtracker.data.local.FoodItem
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
@@ -155,11 +158,15 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
               item matches a known food, scale its caloriesPerServing/proteinG/carbsG/fatG by
               quantity and set matchedKnownFood true; otherwise set matchedKnownFood false.
             - Keep every reply short, a couple of sentences at most, like a text message.
-            - You're told what the user has already eaten today below. Use it for context , 
-              e.g. if asked "what should I eat now" or "how am I doing today", answer using
-              those real numbers instead of guessing. Offer a brief suggestion when it's
-              naturally relevant (they're close to/over a typical daily calorie range, a meal
-              is imbalanced, etc.), but don't lecture unprompted.
+            - You're told what the user has already eaten today, their daily goal, and
+              exactly how much is left below. When they actually ask for planning help
+              (e.g. "what should I eat now", "how much rice can I have", "can I eat this
+              and stay under budget", "how am I doing today"), give a genuine, specific
+              answer using those exact numbers: real food/quantity suggestions and the
+              actual math showing how it fits what's left of their day, the way a
+              knowledgeable friend would, not a vague estimate. Don't volunteer this kind
+              of breakdown unprompted on an ordinary logging message, only when they
+              actually ask for guidance.
 
             Known foods: $knownFoodsJson
             Eaten today: $todaysLogSummary
@@ -213,28 +220,36 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
                 // one at a time, so every part has to be answered, not just the first.
                 contents.add(GeminiContent(role = "model", parts = parts))
 
-                val responseParts = functionCalls.map { call ->
-                    val foodName = (call.args["food_name"] as? JsonPrimitive)?.content.orEmpty()
-                    val facts = runCatching { usdaClient.lookup(foodName, usdaApiKey) }.getOrNull()
-                    val resultJson = buildJsonObject {
-                        if (facts != null) {
-                            put("found", true)
-                            put("description", facts.description)
-                            put("caloriesPer100g", facts.caloriesPer100g)
-                            put("proteinPer100g", facts.proteinPer100g)
-                            put("carbsPer100g", facts.carbsPer100g)
-                            put("fatPer100g", facts.fatPer100g)
-                        } else {
-                            put("found", false)
+                // Run every lookup in this round concurrently rather than one at a time,
+                // a 4-ingredient custom dish used to mean 4 sequential USDA round trips
+                // stacked in front of the next Gemini call; now it's bounded by the
+                // slowest single lookup instead of their sum.
+                val responseParts = coroutineScope {
+                    functionCalls.map { call ->
+                        async {
+                            val foodName = (call.args["food_name"] as? JsonPrimitive)?.content.orEmpty()
+                            val facts = runCatching { usdaClient.lookup(foodName, usdaApiKey) }.getOrNull()
+                            val resultJson = buildJsonObject {
+                                if (facts != null) {
+                                    put("found", true)
+                                    put("description", facts.description)
+                                    put("caloriesPer100g", facts.caloriesPer100g)
+                                    put("proteinPer100g", facts.proteinPer100g)
+                                    put("carbsPer100g", facts.carbsPer100g)
+                                    put("fatPer100g", facts.fatPer100g)
+                                } else {
+                                    put("found", false)
+                                }
+                            }
+                            GeminiPart(
+                                functionResponse = GeminiFunctionResponse(
+                                    name = call.name,
+                                    id = call.id,
+                                    response = resultJson
+                                )
+                            )
                         }
-                    }
-                    GeminiPart(
-                        functionResponse = GeminiFunctionResponse(
-                            name = call.name,
-                            id = call.id,
-                            response = resultJson
-                        )
-                    )
+                    }.awaitAll()
                 }
                 contents.add(GeminiContent(role = "user", parts = responseParts))
                 continue

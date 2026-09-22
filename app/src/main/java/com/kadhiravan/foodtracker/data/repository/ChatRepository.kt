@@ -4,7 +4,6 @@ import com.kadhiravan.foodtracker.data.local.CardStatus
 import com.kadhiravan.foodtracker.data.local.ChatMessage
 import com.kadhiravan.foodtracker.data.local.ChatMessageDao
 import com.kadhiravan.foodtracker.data.local.ChatRole
-import com.kadhiravan.foodtracker.data.local.FoodItem
 import com.kadhiravan.foodtracker.data.local.LogEntry
 import com.kadhiravan.foodtracker.data.local.MealType
 import com.kadhiravan.foodtracker.data.prefs.ChatProvider
@@ -13,7 +12,8 @@ import com.kadhiravan.foodtracker.data.remote.ChatApiClient
 import com.kadhiravan.foodtracker.data.remote.LogCardParser
 import com.kadhiravan.foodtracker.data.remote.ParsedFoodItem
 import com.kadhiravan.foodtracker.util.DateUtils
-import com.kadhiravan.foodtracker.util.FoodMatcher
+import com.kadhiravan.foodtracker.util.NutritionCalculator
+import com.kadhiravan.foodtracker.util.NutritionTargets
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
@@ -31,6 +31,7 @@ class ChatRepository(
     private val openaiApiClient: ChatApiClient,
     private val foodRepository: FoodRepository,
     private val logRepository: LogRepository,
+    private val weightRepository: WeightRepository,
     private val securePrefs: SecurePrefs
 ) {
     /** Chat is scoped per day (like the Diary), a long-running single thread was diluting
@@ -61,7 +62,7 @@ class ChatRepository(
                 newUserText = text,
                 apiKey = apiKey,
                 knownFoods = knownFoods,
-                todaysLogSummary = buildLogSummary(logRepository.getForDate(date)),
+                todaysLogSummary = buildLogSummary(logRepository.getForDate(date), computeTargets()),
                 usdaApiKey = securePrefs.usdaApiKey,
                 geminiModel = securePrefs.geminiModel,
                 ollamaModel = securePrefs.ollamaModel,
@@ -77,53 +78,69 @@ class ChatRepository(
         }
 
         val card = LogCardParser.parse(replyContent)
-        // The model decides for itself whether an item "matches" something in the known-foods
-        // list it was shown, then re-estimates calories/macros either way, so the same dish
-        // worded slightly differently can silently get a different number each time. Redoing
-        // the match deterministically here and overwriting with the catalog's own stored
-        // values (only when the units actually line up) makes repeat dishes consistent
-        // regardless of what the model guessed.
-        val finalContent = if (card != null) {
-            val correctedMeals = card.meals.map { meal ->
-                meal.mealType to meal.items.map { item -> applyKnownFoodMatch(item, knownFoods) }
-            }
-            LogCardParser.withUpdatedFence(replyContent, correctedMeals)
-        } else {
-            replyContent
-        }
-
         chatMessageDao.insert(
             ChatMessage(
                 role = ChatRole.ASSISTANT,
-                content = finalContent,
+                content = replyContent,
                 chatDate = date,
                 cardStatus = if (card != null) CardStatus.PENDING else null
             )
         )
     }
 
-    private fun applyKnownFoodMatch(item: ParsedFoodItem, knownFoods: List<FoodItem>): ParsedFoodItem {
-        val match = FoodMatcher.findBestMatch(item.name, knownFoods) ?: return item
-        if (!FoodMatcher.unitsCompatible(item.unit, match.servingUnit)) return item
-        return item.copy(
-            calories = (match.caloriesPerServing * item.quantity).roundToInt(),
-            proteinG = (match.proteinG ?: 0.0) * item.quantity,
-            carbsG = (match.carbsG ?: 0.0) * item.quantity,
-            fatG = (match.fatG ?: 0.0) * item.quantity,
-            matchedKnownFood = true
-        )
+    /** Mirrors HomeViewModel's own target calculation exactly, so the number the chat
+     * reasons about is the same one shown on the Diary tab, not a separate guess. */
+    private suspend fun computeTargets(): NutritionTargets? {
+        val sex = securePrefs.sex
+        val latestWeightKg = weightRepository.getLatest()?.weightKg
+        val base = if (securePrefs.hasProfileBasics() && sex != null && latestWeightKg != null) {
+            NutritionCalculator.calculate(
+                age = securePrefs.age,
+                heightCm = securePrefs.heightCm,
+                weightKg = latestWeightKg,
+                sex = sex,
+                activityLevel = securePrefs.activityLevel,
+                goal = securePrefs.nutritionGoal
+            )
+        } else if (securePrefs.dailyCalorieGoal > 0) {
+            NutritionCalculator.fromCalorieGoalOnly(securePrefs.dailyCalorieGoal)
+        } else {
+            return null
+        }
+        return if (securePrefs.useCustomMacros) {
+            NutritionCalculator.applyCustomMacros(base, securePrefs.customProteinG, securePrefs.customCarbsG, securePrefs.customFatG)
+        } else {
+            base
+        }
     }
 
-    private fun buildLogSummary(entries: List<LogEntry>): String {
-        if (entries.isEmpty()) return "Nothing logged yet today."
+    private fun buildLogSummary(entries: List<LogEntry>, targets: NutritionTargets?): String {
         val totalCalories = entries.sumOf { it.calories }
         val totalProtein = entries.sumOf { it.proteinG }.roundToInt()
         val totalCarbs = entries.sumOf { it.carbsG }.roundToInt()
         val totalFat = entries.sumOf { it.fatG }.roundToInt()
-        val byMeal = entries.groupBy { it.mealType }.entries.joinToString(" | ") { (meal, items) ->
-            "$meal: " + items.joinToString(", ") { "${it.foodName} (${it.calories} kcal)" }
+        val eaten = if (entries.isEmpty()) {
+            "Nothing logged yet today."
+        } else {
+            val byMeal = entries.groupBy { it.mealType }.entries.joinToString(" | ") { (meal, items) ->
+                "$meal: " + items.joinToString(", ") { "${it.foodName} (${it.calories} kcal)" }
+            }
+            "$totalCalories kcal so far today (${totalProtein}g protein, ${totalCarbs}g carbs, ${totalFat}g fat). $byMeal"
         }
-        return "$totalCalories kcal so far today (${totalProtein}g protein, ${totalCarbs}g carbs, ${totalFat}g fat). $byMeal"
+        // Precomputed here rather than left for the model to subtract itself, arithmetic
+        // it's asked to do in its head is exactly the kind of thing worth just doing in
+        // code and handing over as a fact instead.
+        val goalLine = if (targets != null && targets.calorieGoal > 0) {
+            val remainingCal = (targets.calorieGoal - totalCalories).coerceAtLeast(0)
+            val remainingProtein = (targets.proteinG - totalProtein).coerceAtLeast(0)
+            val remainingCarbs = (targets.carbsG - totalCarbs).coerceAtLeast(0)
+            val remainingFat = (targets.fatG - totalFat).coerceAtLeast(0)
+            " Daily goal: ${targets.calorieGoal} kcal (${targets.proteinG}g protein, ${targets.carbsG}g carbs, ${targets.fatG}g fat)." +
+                " Remaining today: $remainingCal kcal (${remainingProtein}g protein, ${remainingCarbs}g carbs, ${remainingFat}g fat)."
+        } else {
+            " No daily calorie goal set yet (Settings/You tab), so no remaining-budget math is possible, just say so if asked."
+        }
+        return eaten + goalLine
     }
 
     suspend fun confirmCard(message: ChatMessage, mealGroups: List<Pair<MealType, List<ParsedFoodItem>>>) {
@@ -143,18 +160,6 @@ class ChatRepository(
             }
         }
         logRepository.addEntries(entries)
-
-        mealGroups.flatMap { it.second }.filterNot { it.matchedKnownFood }.forEach { item ->
-            if (item.name.isBlank() || item.quantity <= 0) return@forEach
-            foodRepository.upsertFromVoiceEntry(
-                name = item.name.trim(),
-                unit = item.unit.trim().ifBlank { "serving" },
-                caloriesPerServing = (item.calories / item.quantity).toInt(),
-                proteinG = item.proteinG / item.quantity,
-                carbsG = item.carbsG / item.quantity,
-                fatG = item.fatG / item.quantity
-            )
-        }
 
         // Splice any edits made in the card UI back into the stored content, otherwise the
         // CONFIRMED chip re-parses the original, unedited fence and shows the AI's initial

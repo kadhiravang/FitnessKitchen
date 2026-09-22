@@ -61,6 +61,7 @@ class FoodTrackerApp : Application(), Configuration.Provider {
             openaiApiClient,
             foodRepository,
             logRepository,
+            weightRepository,
             securePrefs
         )
     }
