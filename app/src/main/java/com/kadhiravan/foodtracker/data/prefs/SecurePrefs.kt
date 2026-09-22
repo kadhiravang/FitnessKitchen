@@ -76,6 +76,20 @@ class SecurePrefs(context: Context) {
         get() = prefs.getString(KEY_USDA_API_KEY, "") ?: ""
         set(value) = prefs.edit().putString(KEY_USDA_API_KEY, value).apply()
 
+    /** Base URL of a locally-running Ollama server. Almost always a LAN address (e.g.
+     * "http://10.0.0.250:11434"), since Ollama normally runs on a computer, not the phone
+     * itself, "localhost" here would mean the phone, not that computer. No API key needed
+     * since it's not a hosted service, and only reachable on the same Wi-Fi. */
+    var ollamaServerUrl: String
+        get() = prefs.getString(KEY_OLLAMA_SERVER_URL, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_OLLAMA_SERVER_URL, value).apply()
+
+    /** Which locally-pulled Ollama model to call (e.g. "llama3.1"), whatever the user has
+     * `ollama pull`ed themselves — there's no sensible universal default. */
+    var ollamaModel: String
+        get() = prefs.getString(KEY_OLLAMA_MODEL, "") ?: ""
+        set(value) = prefs.edit().putString(KEY_OLLAMA_MODEL, value).apply()
+
     /** Which chat provider backs the Chat tab, see [ChatProvider]. */
     var chatProvider: ChatProvider
         get() = ChatProvider.entries.find { it.name == prefs.getString(KEY_CHAT_PROVIDER, null) } ?: ChatProvider.GOOGLE
@@ -190,6 +204,8 @@ class SecurePrefs(context: Context) {
         private const val KEY_GEMINI_API_KEY = "gemini_api_key"
         private const val KEY_NVIDIA_API_KEY = "nvidia_api_key"
         private const val KEY_USDA_API_KEY = "usda_api_key"
+        private const val KEY_OLLAMA_SERVER_URL = "ollama_server_url"
+        private const val KEY_OLLAMA_MODEL = "ollama_model"
         private const val KEY_CHAT_PROVIDER = "chat_provider"
         private const val KEY_GEMINI_MODEL = "gemini_model"
         private const val KEY_DAILY_GOAL = "daily_calorie_goal"
@@ -214,7 +230,8 @@ class SecurePrefs(context: Context) {
 
 enum class ChatProvider(val displayName: String) {
     GOOGLE("Google Gemini"),
-    NVIDIA("NVIDIA (deepseek)")
+    NVIDIA("NVIDIA (deepseek)"),
+    OLLAMA("Ollama (local)")
 }
 
 /** Gemini model ids the Google provider can call. 3.8 is the current GA default;

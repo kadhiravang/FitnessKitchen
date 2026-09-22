@@ -61,7 +61,8 @@ class GoogleApiClient(private val usdaClient: UsdaNutritionClient) : ChatApiClie
         knownFoods: List<FoodItem>,
         todaysLogSummary: String,
         usdaApiKey: String,
-        geminiModel: String
+        geminiModel: String,
+        ollamaModel: String
     ): String = withContext(Dispatchers.IO) {
         runConversation(history, newUserText, apiKey, knownFoods, todaysLogSummary, usdaApiKey, geminiModel)
     }

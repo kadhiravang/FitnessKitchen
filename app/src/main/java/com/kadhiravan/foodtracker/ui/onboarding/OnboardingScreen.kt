@@ -79,6 +79,8 @@ fun OnboardingScreen(
     var chatProvider by remember { mutableStateOf(securePrefs.chatProvider) }
     var geminiApiKey by remember { mutableStateOf(securePrefs.geminiApiKey) }
     var nvidiaApiKey by remember { mutableStateOf(securePrefs.nvidiaApiKey) }
+    var ollamaServerUrl by remember { mutableStateOf(securePrefs.ollamaServerUrl) }
+    var ollamaModel by remember { mutableStateOf(securePrefs.ollamaModel) }
 
     val scope = rememberCoroutineScope()
 
@@ -100,6 +102,8 @@ fun OnboardingScreen(
         securePrefs.chatProvider = chatProvider
         securePrefs.geminiApiKey = geminiApiKey.trim()
         securePrefs.nvidiaApiKey = nvidiaApiKey.trim()
+        securePrefs.ollamaServerUrl = ollamaServerUrl.trim()
+        securePrefs.ollamaModel = ollamaModel.trim()
         securePrefs.onboardingComplete = true
 
         val weight = weightKg.toDoubleOrNull()
@@ -174,7 +178,9 @@ fun OnboardingScreen(
                     3 -> ChatSetupStep(
                         chatProvider = chatProvider, onProviderChange = { chatProvider = it },
                         geminiApiKey = geminiApiKey, onGeminiKeyChange = { geminiApiKey = it },
-                        nvidiaApiKey = nvidiaApiKey, onNvidiaKeyChange = { nvidiaApiKey = it }
+                        nvidiaApiKey = nvidiaApiKey, onNvidiaKeyChange = { nvidiaApiKey = it },
+                        ollamaServerUrl = ollamaServerUrl, onOllamaServerUrlChange = { ollamaServerUrl = it },
+                        ollamaModel = ollamaModel, onOllamaModelChange = { ollamaModel = it }
                     )
                 }
             }
@@ -336,7 +342,9 @@ private fun ActivityGoalStep(
 private fun ChatSetupStep(
     chatProvider: ChatProvider, onProviderChange: (ChatProvider) -> Unit,
     geminiApiKey: String, onGeminiKeyChange: (String) -> Unit,
-    nvidiaApiKey: String, onNvidiaKeyChange: (String) -> Unit
+    nvidiaApiKey: String, onNvidiaKeyChange: (String) -> Unit,
+    ollamaServerUrl: String, onOllamaServerUrlChange: (String) -> Unit,
+    ollamaModel: String, onOllamaModelChange: (String) -> Unit
 ) {
     Text("Chat assistant", style = MaterialTheme.typography.headlineSmall, fontWeight = FontWeight.Bold)
     Text(
@@ -346,7 +354,10 @@ private fun ChatSetupStep(
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         modifier = Modifier.padding(top = 8.dp, bottom = 24.dp)
     )
-    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    Row(
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.horizontalScroll(rememberScrollState())
+    ) {
         ChatProvider.entries.forEach { provider ->
             FilterChip(
                 selected = chatProvider == provider,
@@ -386,6 +397,30 @@ private fun ChatSetupStep(
                 singleLine = true,
                 visualTransformation = PasswordVisualTransformation(),
                 modifier = Modifier.fillMaxWidth()
+            )
+        }
+        ChatProvider.OLLAMA -> {
+            Text(
+                "Runs on your own computer, no API key. Install from ollama.com, then \"ollama pull\" whichever model you want to use. Enter that computer's Wi-Fi IP address below, not \"localhost\", that would mean this phone instead.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = 14.dp, bottom = 10.dp)
+            )
+            OutlinedTextField(
+                value = ollamaServerUrl,
+                onValueChange = onOllamaServerUrlChange,
+                label = { Text("Server URL") },
+                placeholder = { Text("http://10.0.0.250:11434") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth()
+            )
+            OutlinedTextField(
+                value = ollamaModel,
+                onValueChange = onOllamaModelChange,
+                label = { Text("Model") },
+                placeholder = { Text("llama3.1") },
+                singleLine = true,
+                modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
             )
         }
     }

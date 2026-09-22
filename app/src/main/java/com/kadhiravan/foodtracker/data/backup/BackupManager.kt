@@ -67,6 +67,8 @@ class BackupManager(
                 usdaApiKey = securePrefs.usdaApiKey,
                 chatProvider = securePrefs.chatProvider.name,
                 geminiModel = securePrefs.geminiModel,
+                ollamaServerUrl = securePrefs.ollamaServerUrl,
+                ollamaModel = securePrefs.ollamaModel,
                 dailyCalorieGoal = securePrefs.dailyCalorieGoal,
                 calorieBufferKcal = securePrefs.calorieBufferKcal,
                 targetWeightKg = securePrefs.targetWeightKg,
@@ -181,6 +183,8 @@ class BackupManager(
         securePrefs.usdaApiKey = p.usdaApiKey
         securePrefs.chatProvider = ChatProvider.entries.find { it.name == p.chatProvider } ?: ChatProvider.GOOGLE
         securePrefs.geminiModel = p.geminiModel
+        securePrefs.ollamaServerUrl = p.ollamaServerUrl
+        securePrefs.ollamaModel = p.ollamaModel
         securePrefs.dailyCalorieGoal = p.dailyCalorieGoal
         securePrefs.calorieBufferKcal = p.calorieBufferKcal
         securePrefs.targetWeightKg = p.targetWeightKg

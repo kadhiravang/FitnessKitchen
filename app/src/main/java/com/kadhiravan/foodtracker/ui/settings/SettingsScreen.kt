@@ -59,6 +59,8 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
     var geminiModel by remember { mutableStateOf(securePrefs.geminiModel) }
     var geminiApiKey by remember { mutableStateOf(securePrefs.geminiApiKey) }
     var nvidiaApiKey by remember { mutableStateOf(securePrefs.nvidiaApiKey) }
+    var ollamaServerUrl by remember { mutableStateOf(securePrefs.ollamaServerUrl) }
+    var ollamaModel by remember { mutableStateOf(securePrefs.ollamaModel) }
     var usdaApiKey by remember { mutableStateOf(securePrefs.usdaApiKey) }
     var recognitionLanguage by remember { mutableStateOf(securePrefs.recognitionLanguage) }
     var whisperServerUrl by remember { mutableStateOf(securePrefs.whisperServerUrl) }
@@ -124,7 +126,10 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)
                     )
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.horizontalScroll(rememberScrollState())
+                    ) {
                         ChatProvider.entries.forEach { provider ->
                             FilterChip(
                                 selected = chatProvider == provider,
@@ -201,6 +206,30 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                                 singleLine = true,
                                 visualTransformation = PasswordVisualTransformation(),
                                 modifier = Modifier.fillMaxWidth()
+                            )
+                        }
+                        ChatProvider.OLLAMA -> {
+                            Text(
+                                "Runs on your own computer, no API key, and no per-turn USDA lookups (that's Gemini-only for now). Install from ollama.com, then \"ollama pull\" whichever model you want to use. Enter that computer's Wi-Fi IP address below, not \"localhost\", that would mean this phone instead.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 14.dp, bottom = 10.dp)
+                            )
+                            OutlinedTextField(
+                                value = ollamaServerUrl,
+                                onValueChange = { ollamaServerUrl = it; saved = false },
+                                label = { Text("Server URL") },
+                                placeholder = { Text("http://10.0.0.250:11434") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth()
+                            )
+                            OutlinedTextField(
+                                value = ollamaModel,
+                                onValueChange = { ollamaModel = it; saved = false },
+                                label = { Text("Model") },
+                                placeholder = { Text("llama3.1") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth().padding(top = 10.dp)
                             )
                         }
                     }
@@ -366,6 +395,8 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                 onClick = {
                     securePrefs.geminiApiKey = geminiApiKey.trim()
                     securePrefs.nvidiaApiKey = nvidiaApiKey.trim()
+                    securePrefs.ollamaServerUrl = ollamaServerUrl.trim()
+                    securePrefs.ollamaModel = ollamaModel.trim()
                     securePrefs.usdaApiKey = usdaApiKey.trim()
                     securePrefs.whisperServerUrl = whisperServerUrl.trim()
                     securePrefs.useCloudWhisper = useCloudWhisper

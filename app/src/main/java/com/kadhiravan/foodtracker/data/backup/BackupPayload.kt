@@ -32,6 +32,8 @@ data class SecurePrefsBackup(
     val usdaApiKey: String,
     val chatProvider: String,
     val geminiModel: String,
+    val ollamaServerUrl: String,
+    val ollamaModel: String,
     val dailyCalorieGoal: Int,
     val calorieBufferKcal: Int,
     val targetWeightKg: Float,

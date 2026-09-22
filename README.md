@@ -128,6 +128,15 @@ Settings to NVIDIA and paste a key from [build.nvidia.com](https://build.nvidia.
 Note that the USDA-grounding and multi-call function-calling behavior described
 above is currently Gemini-only.
 
+Want a fully local model instead, no cloud calls, no rate limits? Install
+[Ollama](https://ollama.com) on a computer on the same Wi-Fi, `ollama pull`
+whichever model you want (e.g. `llama3.1`), then switch **Chat model** to
+Ollama and enter that computer's LAN IP (not `localhost`, that would mean the
+phone itself) and the model name. Ollama only listens on `127.0.0.1` by
+default, so it won't accept a connection from the phone until you start it
+with network access enabled: `OLLAMA_HOST=0.0.0.0 ollama serve`. Same caveat
+as NVIDIA above: no USDA-grounding or tool-calling on this path.
+
 ### Voice transcription options (all optional)
 
 The on-device recognizer works out of the box. For higher accuracy, Settings →
