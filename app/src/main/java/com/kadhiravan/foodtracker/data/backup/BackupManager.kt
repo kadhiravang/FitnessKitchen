@@ -62,6 +62,9 @@ class BackupManager(
             prefs = SecurePrefsBackup(
                 name = securePrefs.name,
                 profilePicFileName = profilePicFile?.name,
+                profilePicCropLeft = securePrefs.profilePicCropLeft,
+                profilePicCropTop = securePrefs.profilePicCropTop,
+                profilePicCropSize = securePrefs.profilePicCropSize,
                 geminiApiKey = securePrefs.geminiApiKey,
                 nvidiaApiKey = securePrefs.nvidiaApiKey,
                 usdaApiKey = securePrefs.usdaApiKey,
@@ -183,6 +186,9 @@ class BackupManager(
         val p = data.prefs
         securePrefs.name = p.name
         securePrefs.profilePicPath = p.profilePicFileName?.let { restoredProfilePicPath }.orEmpty()
+        securePrefs.profilePicCropLeft = p.profilePicCropLeft
+        securePrefs.profilePicCropTop = p.profilePicCropTop
+        securePrefs.profilePicCropSize = p.profilePicCropSize
         securePrefs.geminiApiKey = p.geminiApiKey
         securePrefs.nvidiaApiKey = p.nvidiaApiKey
         securePrefs.usdaApiKey = p.usdaApiKey

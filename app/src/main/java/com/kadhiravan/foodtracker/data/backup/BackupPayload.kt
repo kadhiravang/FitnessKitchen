@@ -4,6 +4,8 @@ import com.kadhiravan.foodtracker.data.local.ChatMessage
 import com.kadhiravan.foodtracker.data.local.FoodItem
 import com.kadhiravan.foodtracker.data.local.LogEntry
 import com.kadhiravan.foodtracker.data.local.WeightEntry
+import com.kadhiravan.foodtracker.data.prefs.GeminiModel
+import com.kadhiravan.foodtracker.data.prefs.SpeechLanguage
 import kotlinx.serialization.Serializable
 
 /** Mirrors [com.kadhiravan.foodtracker.data.local.ProgressPhoto], but with the
@@ -25,37 +27,40 @@ data class ProgressPhotoBackup(
  * under `photos/profile/` in the zip. */
 @Serializable
 data class SecurePrefsBackup(
-    val name: String,
-    val profilePicFileName: String?,
-    val geminiApiKey: String,
-    val nvidiaApiKey: String,
-    val usdaApiKey: String,
-    val chatProvider: String,
-    val geminiModel: String,
-    val ollamaServerUrl: String,
-    val ollamaModel: String,
-    val ollamaCloudApiKey: String,
-    val ollamaCloudModel: String,
-    val claudeApiKey: String,
-    val openaiApiKey: String,
-    val openaiModel: String,
-    val dailyCalorieGoal: Int,
-    val calorieBufferKcal: Int,
-    val targetWeightKg: Float,
-    val age: Int,
-    val heightCm: Float,
-    val sex: String?,
-    val activityLevel: String,
-    val nutritionGoal: String,
-    val useCustomMacros: Boolean,
-    val customProteinG: Int,
-    val customCarbsG: Int,
-    val customFatG: Int,
-    val recognitionLanguage: String,
-    val whisperServerUrl: String,
-    val useCloudWhisper: Boolean,
-    val whisperApiKey: String,
-    val backupIncludePhotos: Boolean
+    val name: String = "",
+    val profilePicFileName: String? = null,
+    val profilePicCropLeft: Float = -1f,
+    val profilePicCropTop: Float = 0f,
+    val profilePicCropSize: Float = 1f,
+    val geminiApiKey: String = "",
+    val nvidiaApiKey: String = "",
+    val usdaApiKey: String = "",
+    val chatProvider: String = "GOOGLE",
+    val geminiModel: String = GeminiModel.DEFAULT,
+    val ollamaServerUrl: String = "",
+    val ollamaModel: String = "",
+    val ollamaCloudApiKey: String = "",
+    val ollamaCloudModel: String = "",
+    val claudeApiKey: String = "",
+    val openaiApiKey: String = "",
+    val openaiModel: String = "",
+    val dailyCalorieGoal: Int = 0,
+    val calorieBufferKcal: Int = 100,
+    val targetWeightKg: Float = 0f,
+    val age: Int = 0,
+    val heightCm: Float = 0f,
+    val sex: String? = null,
+    val activityLevel: String = "MODERATE",
+    val nutritionGoal: String = "MAINTAIN",
+    val useCustomMacros: Boolean = false,
+    val customProteinG: Int = 0,
+    val customCarbsG: Int = 0,
+    val customFatG: Int = 0,
+    val recognitionLanguage: String = SpeechLanguage.DEFAULT,
+    val whisperServerUrl: String = "",
+    val useCloudWhisper: Boolean = false,
+    val whisperApiKey: String = "",
+    val backupIncludePhotos: Boolean = true
 )
 
 /** The whole exported state, serialized to `backup.json` at the root of the backup zip , 

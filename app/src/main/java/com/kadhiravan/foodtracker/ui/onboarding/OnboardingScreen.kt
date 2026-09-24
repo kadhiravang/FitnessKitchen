@@ -1,5 +1,8 @@
 package com.kadhiravan.foodtracker.ui.onboarding
 
+import android.net.Uri
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -33,6 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
+import com.kadhiravan.foodtracker.data.backup.BackupManager
 import com.kadhiravan.foodtracker.data.prefs.ActivityLevel
 import com.kadhiravan.foodtracker.data.prefs.ChatProvider
 import com.kadhiravan.foodtracker.data.prefs.NutritionGoal
@@ -53,6 +57,7 @@ private const val TOTAL_STEPS = 4
 fun OnboardingScreen(
     securePrefs: SecurePrefs,
     weightRepository: WeightRepository,
+    backupManager: BackupManager,
     onFinished: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -88,6 +93,27 @@ fun OnboardingScreen(
     var openaiModel by remember { mutableStateOf(securePrefs.openaiModel) }
 
     val scope = rememberCoroutineScope()
+
+    var restoreInProgress by remember { mutableStateOf(false) }
+    var restoreStatus by remember { mutableStateOf<String?>(null) }
+    var restoreDone by remember { mutableStateOf(false) }
+    val restoreLauncher = rememberLauncherForActivityResult(ActivityResultContracts.OpenDocument()) { uri: Uri? ->
+        if (uri != null) {
+            restoreInProgress = true
+            restoreStatus = null
+            scope.launch {
+                try {
+                    backupManager.restoreBackup(uri)
+                    restoreDone = true
+                    restoreStatus = "Restored. Close and reopen the app to continue with your data."
+                } catch (e: Exception) {
+                    restoreStatus = "Restore failed: ${e.message}"
+                } finally {
+                    restoreInProgress = false
+                }
+            }
+        }
+    }
 
     fun persistAndFinish() {
         securePrefs.name = name.trim()
@@ -197,6 +223,22 @@ fun OnboardingScreen(
                         openaiApiKey = openaiApiKey, onOpenaiKeyChange = { openaiApiKey = it },
                         openaiModel = openaiModel, onOpenaiModelChange = { openaiModel = it }
                     )
+                }
+                if (step == 0) {
+                    OutlinedButton(
+                        onClick = { restoreLauncher.launch(arrayOf("application/zip", "*/*")) },
+                        enabled = !restoreInProgress && !restoreDone,
+                        modifier = Modifier.fillMaxWidth().padding(top = 24.dp)
+                    ) {
+                        Text(if (restoreInProgress) "Restoring..." else "Restore from a backup instead")
+                    }
+                    restoreStatus?.let {
+                        Text(
+                            it,
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.padding(top = 8.dp)
+                        )
+                    }
                 }
             }
 

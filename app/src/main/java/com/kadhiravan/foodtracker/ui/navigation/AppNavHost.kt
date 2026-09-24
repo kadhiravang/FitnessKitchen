@@ -124,6 +124,7 @@ fun AppNavHost(
                 OnboardingScreen(
                     securePrefs = securePrefs,
                     weightRepository = weightRepository,
+                    backupManager = backupManager,
                     onFinished = {
                         navController.navigate(Routes.CHAT) {
                             popUpTo(Routes.ONBOARDING) { inclusive = true }
