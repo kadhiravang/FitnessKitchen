@@ -22,7 +22,7 @@ import java.util.concurrent.TimeUnit
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 
-class NvidiaApiException(message: String) : IOException(message)
+class NvidiaApiException(message: String, val httpCode: Int? = null) : IOException(message)
 
 /**
  * Talks to NVIDIA's OpenAI-compatible chat completions endpoint to hold a running
@@ -127,23 +127,33 @@ class NvidiaApiClient : ChatApiClient {
             add(ApiChatMessage(role = "user", content = newUserText))
         }
 
-        val requestBody = ChatCompletionRequest(
-            model = "deepseek-ai/deepseek-v4-flash-0731",
-            messages = apiMessages
-        )
-
-        val body = json.encodeToString(ChatCompletionRequest.serializer(), requestBody)
-            .toRequestBody("application/json".toMediaType())
-
-        val request = Request.Builder()
-            .url("https://integrate.api.nvidia.com/v1/chat/completions")
-            .addHeader("Authorization", "Bearer $apiKey")
-            .addHeader("Content-Type", "application/json")
-            .post(body)
-            .build()
+        fun buildRequest(model: String): Request {
+            val body = json.encodeToString(
+                ChatCompletionRequest.serializer(),
+                ChatCompletionRequest(model = model, messages = apiMessages)
+            ).toRequestBody("application/json".toMediaType())
+            return Request.Builder()
+                .url("https://integrate.api.nvidia.com/v1/chat/completions")
+                .addHeader("Authorization", "Bearer $apiKey")
+                .addHeader("Content-Type", "application/json")
+                .post(body)
+                .build()
+        }
 
         val startMs = System.currentTimeMillis()
-        val responseText = executeWithRetry(request)
+        val responseText = try {
+            executeWithRetry(buildRequest(activeModel))
+        } catch (e: NvidiaApiException) {
+            // 404/410 on chat completions means NVIDIA retired this model id (it has happened
+            // three times now), so look up whatever DeepSeek flash model is live and retry once
+            // instead of leaving the user stuck until the app is updated.
+            if (e.httpCode != 404 && e.httpCode != 410) throw e
+            val replacement = findLiveModel()?.takeIf { it != activeModel } ?: throw e
+            Log.d(TAG, "model $activeModel retired, switching to $replacement")
+            val text = executeWithRetry(buildRequest(replacement))
+            activeModel = replacement
+            text
+        }
         Log.d(TAG, "NVIDIA API round trip: ${System.currentTimeMillis() - startMs}ms")
 
         val completion = try {
@@ -196,7 +206,7 @@ class NvidiaApiClient : ChatApiClient {
                 delay(backoffMs(attempt))
                 continue
             }
-            throw NvidiaApiException("NVIDIA API error ${response.code}: ${bodyText.take(300)}")
+            throw NvidiaApiException("NVIDIA API error ${response.code}: ${bodyText.take(300)}", response.code)
         }
     }
 
@@ -222,10 +232,28 @@ class NvidiaApiClient : ChatApiClient {
             })
         }
 
+    /** The catalog listing needs no auth. Newest DeepSeek "flash" id wins (descending sort puts
+     * "v4.1-flash" above "v4-flash-0731"). */
+    private suspend fun findLiveModel(): String? = try {
+        val request = Request.Builder().url("https://integrate.api.nvidia.com/v1/models").get().build()
+        val text = executeWithRetry(request)
+        json.decodeFromString(ModelListResponse.serializer(), text).data
+            .map { it.id }
+            .filter { it.startsWith("deepseek-ai/deepseek-v") && it.contains("flash") }
+            .maxOrNull()
+    } catch (e: Exception) {
+        null
+    }
+
     private fun String.escapeJson(): String = replace("\\", "\\\\").replace("\"", "\\\"")
+
+    // Resolved lazily and remembered for the process lifetime once a retired id is replaced.
+    @Volatile
+    private var activeModel = DEFAULT_MODEL
 
     private companion object {
         const val TAG = "NvidiaApiClient"
+        const val DEFAULT_MODEL = "deepseek-ai/deepseek-v4.1-flash"
     }
 }
 
@@ -247,6 +275,12 @@ private data class ChatCompletionRequest(
 
 @Serializable
 private data class ChatTemplateKwargs(val thinking: Boolean = false)
+
+@Serializable
+private data class ModelListResponse(val data: List<ModelListEntry> = emptyList())
+
+@Serializable
+private data class ModelListEntry(val id: String)
 
 @Serializable
 private data class ChatCompletionResponse(val choices: List<ChatCompletionChoice>)
