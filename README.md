@@ -65,6 +65,9 @@ session to take effect, run `newgrp docker` in your shell, or log out/in.
 
 ### Build a debug APK
 
+The first build downloads the ~50 MB sherpa-onnx library (on-device Whisper) into
+`app/libs/`, which is not committed to git. The APK targets 64-bit ARM (arm64-v8a) only.
+
 ```bash
 docker run --rm -v "$PWD":/workspace -w /workspace foodtracker-build gradle assembleDebug --no-daemon
 ```
@@ -157,16 +160,26 @@ Also available as chat providers, same no-grounding caveat as NVIDIA/Ollama:
 
 ### Voice transcription options (all optional)
 
-The on-device recognizer works out of the box. For higher accuracy, Settings →
-**Voice transcription (Whisper)** offers two alternatives:
+The phone's built-in recognizer works out of the box. For higher accuracy, Settings →
+**Voice transcription (Whisper)** offers three alternatives:
+- **On this phone (experimental)**: runs a Whisper model locally through
+  [sherpa-onnx](https://github.com/k2-fsa/sherpa-onnx), no server or internet.
+  Download a sherpa-onnx Whisper package (e.g. `sherpa-onnx-whisper-turbo` or
+  `-small` from the sherpa-onnx `asr-models` release), and copy its `*-encoder.int8.onnx`,
+  `*-decoder.int8.onnx` and `*-tokens.txt` to the app's files folder as
+  `Android/data/com.kadhiravan.foodtracker/files/whisper/<model folder>/` (the folder
+  name you enter in Settings). On a Galaxy S26, turbo transcribes a 6.6 s clip in about
+  2 s and small in about 1.2 s. The app creates that folder itself only when you run
+  it once, so open the app before copying, and if the app can't read the folder run
+  `adb shell chmod -R 777` on it.
 - **Self-hosted**: run the Whisper server on your own laptop (see
   `whisper-server/`) and enter its address, only reachable on the same Wi-Fi.
 - **OpenAI's cloud API**: flip the switch and paste an OpenAI API key instead , 
   needs an OpenAI account with billing set up (Whisper isn't on the free tier),
   get one at [platform.openai.com/api-keys](https://platform.openai.com/api-keys).
 
-If neither is reachable/configured, it falls back to the on-device recognizer
-automatically.
+Priority is on-phone model (if its files are present), then OpenAI's cloud API,
+then the self-hosted server if reachable, and finally the phone's built-in recognizer.
 
 ## Project layout
 

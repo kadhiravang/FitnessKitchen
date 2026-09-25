@@ -89,7 +89,10 @@ fun UserScreen(securePrefs: SecurePrefs, weightRepository: WeightRepository, mod
         val ageInt = age.toIntOrNull() ?: 0
         val heightFloat = heightCm.toFloatOrNull() ?: 0f
         val currentSex = sex
-        if (ageInt > 0 && heightFloat > 0f && currentSex != null && latestWeightKg != null) {
+        val manualGoal = calorieGoal.toIntOrNull() ?: 0
+        if (manualGoal > 0) {
+            manualGoal
+        } else if (ageInt > 0 && heightFloat > 0f && currentSex != null && latestWeightKg != null) {
             NutritionCalculator.calculate(
                 age = ageInt,
                 heightCm = heightFloat,
@@ -222,7 +225,7 @@ fun UserScreen(securePrefs: SecurePrefs, weightRepository: WeightRepository, mod
                 Column(modifier = Modifier.padding(20.dp)) {
                     Text("Daily calorie goal", style = MaterialTheme.typography.titleMedium)
                     Text(
-                        "Used only until your profile above is complete, after that, your calculated target takes over automatically.",
+                        "Your own daily target. When set, it overrides the target calculated from your profile above. Leave it empty to use the calculated one.",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp, bottom = 12.dp)

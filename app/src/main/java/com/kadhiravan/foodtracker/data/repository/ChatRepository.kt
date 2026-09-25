@@ -107,10 +107,11 @@ class ChatRepository(
         } else {
             return null
         }
+        val withGoal = NutritionCalculator.withManualGoal(base, securePrefs.dailyCalorieGoal)
         return if (securePrefs.useCustomMacros) {
-            NutritionCalculator.applyCustomMacros(base, securePrefs.customProteinG, securePrefs.customCarbsG, securePrefs.customFatG)
+            NutritionCalculator.applyCustomMacros(withGoal, securePrefs.customProteinG, securePrefs.customCarbsG, securePrefs.customFatG)
         } else {
-            base
+            withGoal
         }
     }
 

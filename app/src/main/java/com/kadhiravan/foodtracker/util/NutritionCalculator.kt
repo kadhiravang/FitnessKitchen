@@ -59,6 +59,20 @@ object NutritionCalculator {
         )
     }
 
+    /** A calorie goal the user typed in themselves wins over the calculated one; the
+     * calculated macro split is scaled proportionally so it still adds up to that goal. */
+    fun withManualGoal(base: NutritionTargets, manualGoal: Int): NutritionTargets {
+        if (manualGoal <= 0) return base
+        if (base.calorieGoal <= 0) return fromCalorieGoalOnly(manualGoal)
+        val factor = manualGoal.toDouble() / base.calorieGoal
+        return NutritionTargets(
+            calorieGoal = manualGoal,
+            proteinG = (base.proteinG * factor).roundToInt(),
+            carbsG = (base.carbsG * factor).roundToInt(),
+            fatG = (base.fatG * factor).roundToInt()
+        )
+    }
+
     /** Calories represented by a macro split, protein/carbs at 4 kcal/g, fat at 9 kcal/g. */
     fun caloriesFor(proteinG: Int, carbsG: Int, fatG: Int): Int = proteinG * 4 + carbsG * 4 + fatG * 9
 

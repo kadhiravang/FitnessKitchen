@@ -69,6 +69,8 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
     var usdaApiKey by remember { mutableStateOf(securePrefs.usdaApiKey) }
     var recognitionLanguage by remember { mutableStateOf(securePrefs.recognitionLanguage) }
     var whisperServerUrl by remember { mutableStateOf(securePrefs.whisperServerUrl) }
+    var useOnDeviceWhisper by remember { mutableStateOf(securePrefs.useOnDeviceWhisper) }
+    var onDeviceWhisperModel by remember { mutableStateOf(securePrefs.onDeviceWhisperModel) }
     var useCloudWhisper by remember { mutableStateOf(securePrefs.useCloudWhisper) }
     var whisperApiKey by remember { mutableStateOf(securePrefs.whisperApiKey) }
     var saved by remember { mutableStateOf(false) }
@@ -344,6 +346,40 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
+                            "Transcribe on this phone (offline, needs a model on the device)",
+                            style = MaterialTheme.typography.bodyMedium,
+                            modifier = Modifier.weight(1f).padding(end = 12.dp)
+                        )
+                        Switch(
+                            checked = useOnDeviceWhisper,
+                            onCheckedChange = { useOnDeviceWhisper = it; saved = false }
+                        )
+                    }
+                    AnimatedVisibility(visible = useOnDeviceWhisper) {
+                        Column {
+                            OutlinedTextField(
+                                value = onDeviceWhisperModel,
+                                onValueChange = { onDeviceWhisperModel = it; saved = false },
+                                label = { Text("Model folder") },
+                                placeholder = { Text("turbo") },
+                                singleLine = true,
+                                modifier = Modifier.fillMaxWidth().padding(top = 8.dp)
+                            )
+                            Text(
+                                "Looks in this app's files folder, whisper/<model folder>/, for the encoder, decoder and tokens files. Takes priority over the options below when the model is present.",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.padding(top = 8.dp)
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
                             "Use OpenAI's cloud API instead of a local server",
                             style = MaterialTheme.typography.bodyMedium,
                             modifier = Modifier.weight(1f).padding(end = 12.dp)
@@ -473,6 +509,8 @@ fun SettingsScreen(securePrefs: SecurePrefs, backupManager: BackupManager, modif
                     securePrefs.openaiModel = openaiModel.trim()
                     securePrefs.usdaApiKey = usdaApiKey.trim()
                     securePrefs.whisperServerUrl = whisperServerUrl.trim()
+                    securePrefs.useOnDeviceWhisper = useOnDeviceWhisper
+                    securePrefs.onDeviceWhisperModel = onDeviceWhisperModel.trim().ifBlank { "turbo" }
                     securePrefs.useCloudWhisper = useCloudWhisper
                     securePrefs.whisperApiKey = whisperApiKey.trim()
                     saved = true

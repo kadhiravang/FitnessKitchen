@@ -4,6 +4,11 @@ import android.app.Application
 import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.content.Context
+import android.content.BroadcastReceiver
+import android.content.Intent
+import android.content.IntentFilter
+import android.content.pm.ApplicationInfo
+import android.util.Log
 import androidx.work.Configuration
 import androidx.work.ExistingPeriodicWorkPolicy
 import androidx.work.ListenableWorker
@@ -18,6 +23,7 @@ import com.kadhiravan.foodtracker.data.remote.GoogleApiClient
 import com.kadhiravan.foodtracker.data.remote.NvidiaApiClient
 import com.kadhiravan.foodtracker.data.remote.ClaudeApiClient
 import com.kadhiravan.foodtracker.data.remote.OllamaApiClient
+import com.kadhiravan.foodtracker.data.remote.OnDeviceWhisper
 import com.kadhiravan.foodtracker.data.remote.OllamaCloudApiClient
 import com.kadhiravan.foodtracker.data.remote.OpenAiApiClient
 import com.kadhiravan.foodtracker.data.remote.UsdaNutritionClient
@@ -28,6 +34,8 @@ import com.kadhiravan.foodtracker.data.repository.ProgressPhotoRepository
 import com.kadhiravan.foodtracker.data.repository.WeightRepository
 import com.kadhiravan.foodtracker.worker.WeightReminderWorker
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.SupervisorJob
 import java.util.concurrent.TimeUnit
 
@@ -43,6 +51,7 @@ class FoodTrackerApp : Application(), Configuration.Provider {
     val logRepository by lazy { LogRepository(database.logEntryDao()) }
     val weightRepository by lazy { WeightRepository(database.weightEntryDao()) }
     val progressPhotoRepository by lazy { ProgressPhotoRepository(database.progressPhotoDao()) }
+    val onDeviceWhisper by lazy { OnDeviceWhisper(this) }
     private val usdaNutritionClient by lazy { UsdaNutritionClient() }
     private val googleApiClient by lazy { GoogleApiClient(usdaNutritionClient) }
     private val nvidiaApiClient by lazy { NvidiaApiClient() }
@@ -100,6 +109,40 @@ class FoodTrackerApp : Application(), Configuration.Provider {
         WorkManager.initialize(this, workManagerConfiguration)
         createWeightReminderChannel()
         scheduleWeightReminder()
+        if (applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0) registerWhisperBenchReceiver()
+    }
+
+    /** Debug builds only: `adb shell am broadcast -a com.kadhiravan.foodtracker.WHISPER_BENCH
+     * --es model turbo --es lang "" --ei threads 4` replays every WAV saved in
+     * `whisper-samples/` against a model and logs text + timings under tag WhisperBench. */
+    private fun registerWhisperBenchReceiver() {
+        val receiver = object : BroadcastReceiver() {
+            override fun onReceive(context: Context, intent: Intent) {
+                val model = intent.getStringExtra("model") ?: "turbo"
+                val lang = intent.getStringExtra("lang").orEmpty()
+                val threads = intent.getIntExtra("threads", OnDeviceWhisper.DEFAULT_THREADS)
+                applicationScope.launch(Dispatchers.Default) {
+                    val dir = onDeviceWhisper.samplesDir()
+                    val files = dir.listFiles().orEmpty().filter { it.extension == "wav" }.sortedBy { it.name }
+                    Log.d("WhisperBench", "start model=$model lang='$lang' threads=$threads files=${files.size}")
+                    for (f in files) {
+                        try {
+                            val r = onDeviceWhisper.transcribe(f.readBytes(), model, lang, threads)
+                            Log.d(
+                                "WhisperBench",
+                                "model=$model lang='$lang' file=${f.name} audio=${"%.1f".format(r.audioSeconds)}s " +
+                                    "load=${r.loadMs}ms decode=${r.decodeMs}ms " +
+                                    "rtf=${"%.2f".format(r.decodeMs / 1000f / r.audioSeconds)} text=${r.text}"
+                            )
+                        } catch (e: Throwable) {
+                            Log.e("WhisperBench", "file=${f.name} failed", e)
+                        }
+                    }
+                    Log.d("WhisperBench", "done model=$model")
+                }
+            }
+        }
+        registerReceiver(receiver, IntentFilter("com.kadhiravan.foodtracker.WHISPER_BENCH"), Context.RECEIVER_EXPORTED)
     }
 
     private fun createWeightReminderChannel() {

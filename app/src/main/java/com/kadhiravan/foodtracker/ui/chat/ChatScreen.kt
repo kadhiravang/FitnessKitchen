@@ -62,6 +62,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
+import android.util.Log
+import com.kadhiravan.foodtracker.FoodTrackerApp
 import com.kadhiravan.foodtracker.data.local.ChatMessage
 import com.kadhiravan.foodtracker.data.prefs.SecurePrefs
 import com.kadhiravan.foodtracker.data.remote.CloudWhisperClient
@@ -85,6 +87,7 @@ fun ChatScreen(viewModel: ChatViewModel, securePrefs: SecurePrefs, modifier: Mod
     var isListening by remember { mutableStateOf(false) }
     var isTranscribing by remember { mutableStateOf(false) }
     var useWhisperPath by remember { mutableStateOf(false) }
+    var useOnDevicePath by remember { mutableStateOf(false) }
     var micAmplitude by remember { mutableFloatStateOf(0f) }
     var hasMicPermission by remember {
         mutableStateOf(
@@ -99,6 +102,15 @@ fun ChatScreen(viewModel: ChatViewModel, securePrefs: SecurePrefs, modifier: Mod
     val coroutineScope = rememberCoroutineScope()
     val whisperClient = remember { LocalWhisperClient() }
     val cloudWhisperClient = remember { CloudWhisperClient() }
+    val onDeviceWhisper = remember { (context.applicationContext as FoodTrackerApp).onDeviceWhisper }
+
+    // Load the model in the background as soon as the chat opens so the first mic tap
+    // doesn't wait on it.
+    LaunchedEffect(securePrefs.useOnDeviceWhisper, securePrefs.onDeviceWhisperModel) {
+        if (securePrefs.useOnDeviceWhisper && onDeviceWhisper.isModelAvailable(securePrefs.onDeviceWhisperModel)) {
+            onDeviceWhisper.warmUp(securePrefs.onDeviceWhisperModel)
+        }
+    }
 
     val controller = remember {
         SpeechRecognizerController(
@@ -124,7 +136,11 @@ fun ChatScreen(viewModel: ChatViewModel, securePrefs: SecurePrefs, modifier: Mod
         inputText = ""
         isListening = true
         coroutineScope.launch {
-            useWhisperPath = if (securePrefs.useCloudWhisper && securePrefs.whisperApiKey.isNotBlank()) {
+            useOnDevicePath = securePrefs.useOnDeviceWhisper &&
+                onDeviceWhisper.isModelAvailable(securePrefs.onDeviceWhisperModel)
+            useWhisperPath = if (useOnDevicePath) {
+                true
+            } else if (securePrefs.useCloudWhisper && securePrefs.whisperApiKey.isNotBlank()) {
                 true
             } else {
                 whisperClient.isReachable(securePrefs.whisperServerUrl)
@@ -145,7 +161,19 @@ fun ChatScreen(viewModel: ChatViewModel, securePrefs: SecurePrefs, modifier: Mod
             val useCloud = securePrefs.useCloudWhisper && securePrefs.whisperApiKey.isNotBlank()
             coroutineScope.launch {
                 try {
-                    inputText = if (useCloud) {
+                    inputText = if (useOnDevicePath) {
+                        val model = securePrefs.onDeviceWhisperModel
+                        onDeviceWhisper.samplesDirIfPresent()?.let { dir ->
+                            runCatching { java.io.File(dir, "${System.currentTimeMillis()}.wav").writeBytes(wav) }
+                        }
+                        val result = onDeviceWhisper.transcribe(wav, model)
+                        Log.d(
+                            "OnDeviceWhisper",
+                            "model=$model audio=${"%.1f".format(result.audioSeconds)}s load=${result.loadMs}ms " +
+                                "decode=${result.decodeMs}ms text=${result.text}"
+                        )
+                        result.text
+                    } else if (useCloud) {
                         cloudWhisperClient.transcribe(securePrefs.whisperApiKey, wav, securePrefs.recognitionLanguage)
                     } else {
                         whisperClient.transcribe(securePrefs.whisperServerUrl, wav)

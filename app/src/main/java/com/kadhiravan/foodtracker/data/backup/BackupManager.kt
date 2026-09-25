@@ -93,6 +93,8 @@ class BackupManager(
                 whisperServerUrl = securePrefs.whisperServerUrl,
                 useCloudWhisper = securePrefs.useCloudWhisper,
                 whisperApiKey = securePrefs.whisperApiKey,
+                useOnDeviceWhisper = securePrefs.useOnDeviceWhisper,
+                onDeviceWhisperModel = securePrefs.onDeviceWhisperModel,
                 backupIncludePhotos = includePhotos
             )
         )
@@ -217,6 +219,8 @@ class BackupManager(
         securePrefs.whisperServerUrl = p.whisperServerUrl
         securePrefs.useCloudWhisper = p.useCloudWhisper
         securePrefs.whisperApiKey = p.whisperApiKey
+        securePrefs.useOnDeviceWhisper = p.useOnDeviceWhisper
+        securePrefs.onDeviceWhisperModel = p.onDeviceWhisperModel
         securePrefs.backupIncludePhotos = p.backupIncludePhotos
         // A restored install should never re-run the first-launch wizard.
         securePrefs.onboardingComplete = true

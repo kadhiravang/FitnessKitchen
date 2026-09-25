@@ -60,6 +60,8 @@ data class SecurePrefsBackup(
     val whisperServerUrl: String = "",
     val useCloudWhisper: Boolean = false,
     val whisperApiKey: String = "",
+    val useOnDeviceWhisper: Boolean = false,
+    val onDeviceWhisperModel: String = "turbo",
     val backupIncludePhotos: Boolean = true
 )
 

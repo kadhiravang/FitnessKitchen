@@ -4,6 +4,9 @@ import android.content.Context
 import android.content.SharedPreferences
 import androidx.security.crypto.EncryptedSharedPreferences
 import androidx.security.crypto.MasterKey
+import kotlinx.coroutines.channels.awaitClose
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.callbackFlow
 
 /**
  * Encrypted on-device storage for chat API keys and small user settings.
@@ -28,6 +31,14 @@ class SecurePrefs(context: Context) {
     /** True once the first-launch onboarding flow has been completed, gates whether
      * [com.kadhiravan.foodtracker.ui.navigation.AppNavHost] starts on onboarding or the
      * main app. */
+    /** Emits whenever any setting changes, so long-lived screens (the Diary's view model)
+     * can recompute instead of showing values from before an edit. */
+    val changes: Flow<Unit> = callbackFlow {
+        val listener = SharedPreferences.OnSharedPreferenceChangeListener { _, _ -> trySend(Unit) }
+        prefs.registerOnSharedPreferenceChangeListener(listener)
+        awaitClose { prefs.unregisterOnSharedPreferenceChangeListener(listener) }
+    }
+
     var onboardingComplete: Boolean
         get() = prefs.getBoolean(KEY_ONBOARDING_COMPLETE, false)
         set(value) = prefs.edit().putBoolean(KEY_ONBOARDING_COMPLETE, value).apply()
@@ -213,6 +224,18 @@ class SecurePrefs(context: Context) {
         get() = prefs.getString(KEY_WHISPER_API_KEY, "") ?: ""
         set(value) = prefs.edit().putString(KEY_WHISPER_API_KEY, value).apply()
 
+    /** Transcribe voice input with a Whisper model running on this phone (sherpa-onnx),
+     * no server or internet needed. Falls back to the other paths if the model files
+     * aren't on the device yet. */
+    var useOnDeviceWhisper: Boolean
+        get() = prefs.getBoolean(KEY_USE_ON_DEVICE_WHISPER, false)
+        set(value) = prefs.edit().putBoolean(KEY_USE_ON_DEVICE_WHISPER, value).apply()
+
+    /** Folder name under the app's external files dir `whisper/`, e.g. "turbo" or "small". */
+    var onDeviceWhisperModel: String
+        get() = prefs.getString(KEY_ON_DEVICE_WHISPER_MODEL, "turbo") ?: "turbo"
+        set(value) = prefs.edit().putString(KEY_ON_DEVICE_WHISPER_MODEL, value).apply()
+
     /** Whether a backup zip (see data/backup/BackupManager.kt) includes progress-photo
      * image files, off just skips the photos, the rest of the backup is unaffected. */
     var backupIncludePhotos: Boolean
@@ -254,6 +277,8 @@ class SecurePrefs(context: Context) {
         private const val KEY_WHISPER_SERVER_URL = "whisper_server_url"
         private const val KEY_USE_CLOUD_WHISPER = "use_cloud_whisper"
         private const val KEY_WHISPER_API_KEY = "whisper_api_key"
+        private const val KEY_USE_ON_DEVICE_WHISPER = "use_on_device_whisper"
+        private const val KEY_ON_DEVICE_WHISPER_MODEL = "on_device_whisper_model"
         private const val KEY_BACKUP_INCLUDE_PHOTOS = "backup_include_photos"
     }
 }

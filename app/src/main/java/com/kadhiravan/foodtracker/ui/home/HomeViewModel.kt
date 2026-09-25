@@ -22,6 +22,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -51,8 +52,9 @@ class HomeViewModel(
 
     val uiState: StateFlow<HomeUiState> = combine(
         selectedDate.flatMapLatest { date -> logRepository.observeForDate(date).map { date to it } },
-        weightRepository.observeAll()
-    ) { (date, entries), weightHistory ->
+        weightRepository.observeAll(),
+        securePrefs.changes.onStart { emit(Unit) }
+    ) { (date, entries), weightHistory, _ ->
         val targets = computeTargets(weightHistory.lastOrNull()?.weightKg)
         HomeUiState(
             date = date,
@@ -87,10 +89,11 @@ class HomeViewModel(
         } else {
             NutritionCalculator.fromCalorieGoalOnly(securePrefs.dailyCalorieGoal)
         }
+        val withGoal = NutritionCalculator.withManualGoal(base, securePrefs.dailyCalorieGoal)
         return if (securePrefs.useCustomMacros) {
-            NutritionCalculator.applyCustomMacros(base, securePrefs.customProteinG, securePrefs.customCarbsG, securePrefs.customFatG)
+            NutritionCalculator.applyCustomMacros(withGoal, securePrefs.customProteinG, securePrefs.customCarbsG, securePrefs.customFatG)
         } else {
-            base
+            withGoal
         }
     }
 

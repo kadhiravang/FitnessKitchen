@@ -14,8 +14,12 @@ android {
         applicationId = "com.kadhiravan.foodtracker"
         minSdk = 26
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 22
+        versionName = "2.2"
+
+        // On-device Whisper (sherpa-onnx) ships native libs; both target phones are arm64,
+        // dropping the other ABIs keeps the APK ~35 MB smaller.
+        ndk { abiFilters += "arm64-v8a" }
     }
 
     signingConfigs {
@@ -57,6 +61,7 @@ android {
 }
 
 dependencies {
+    implementation(files("libs/sherpa-onnx-1.13.8.aar"))
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")
     implementation(composeBom)
     androidTestImplementation(composeBom)
@@ -89,3 +94,18 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.7.1")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.8.1")
 }
+
+// The on-device Whisper library (sherpa-onnx, ~50 MB) is not committed; fetch it on first build.
+val sherpaVersion = "1.13.8"
+val sherpaAar = layout.projectDirectory.file("libs/sherpa-onnx-$sherpaVersion.aar").asFile
+val downloadSherpa by tasks.registering {
+    outputs.file(sherpaAar)
+    doLast {
+        if (!sherpaAar.exists()) {
+            sherpaAar.parentFile.mkdirs()
+            val url = "https://github.com/k2-fsa/sherpa-onnx/releases/download/v$sherpaVersion/sherpa-onnx-$sherpaVersion.aar"
+            uri(url).toURL().openStream().use { input -> sherpaAar.outputStream().use { input.copyTo(it) } }
+        }
+    }
+}
+tasks.matching { it.name == "preBuild" }.configureEach { dependsOn(downloadSherpa) }
